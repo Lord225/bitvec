@@ -62,12 +62,6 @@ def get_mask_union(mask_a: np.array, mask_b: np.array):
 def format_binary(_data: np.array, to_join: str):
     return to_join.join(((np.binary_repr(i, 8)) for i in reversed(_data)))
 
-def to_integer(_data: np.array):
-    sum_of_values = int()
-    for i, byte in enumerate(_data):
-        sum_of_values += int(byte)<<(8*i)
-    return sum_of_values
-
 @nb.njit(locals={'sum_of_values': nb.float64, 'increment':nb.float64})
 def to_float(_data: np.array):
     sum_of_values = 0

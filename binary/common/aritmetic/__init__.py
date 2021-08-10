@@ -162,7 +162,13 @@ def convert(tar: binary_class.Binary, sign_behavior: Literal["unsigned", "magnit
 def cast(tar: binary_class.Binary, sign_behavior: Literal["unsigned", "magnitude", "signed"]):
     return binary_class.Binary(tar._data, bit_lenght=tar._len, sign_behavior=sign_behavior)
 
-def lsh(rsh: binary_class.Binary, lsh: object):
+def wrapping_lsh(rsh: binary_class.Binary, lsh: object) -> binary_class.Binary:
+    out, _ = overflowing_lsh(rsh, lsh)
+    return out
+def overflowing_lsh(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Binary, bool]:
+    out, (of, _, _, _) =  flaged_lsh(rsh, lsh)
+    return out, of
+def flaged_lsh(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Binary, Flags]:
     rsh_casted = int(cast(rsh, "unsigned"))
     lsh_casted = int(cast(lsh, "unsigned")) if isinstance(lsh, binary_class.Binary) else int(lsh)
 
@@ -170,40 +176,92 @@ def lsh(rsh: binary_class.Binary, lsh: object):
         output = rsh_casted<<lsh_casted
     else:
         output = rsh_casted
+
+    of = output > rsh.maximum_value()
+    zf = output==0
+    sf = rsh[-1]
+    pf = rsh[0]
+    
     output = binary_class.Binary(output, bit_lenght=rsh._len, sign_behavior=rsh._sign_behavior)
-    return output
-def shld(rsh: binary_class.Binary, lsh: object):
+    
+    return output, Flags(of, zf, sf, pf)
+
+def wrapping_shld(rsh: binary_class.Binary, lsh: object) -> binary_class.Binary:
+    out, _ = overflowing_shld(rsh, lsh)
+    return out
+def overflowing_shld(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Binary, bool]:
+    out, (of, _, _, _) =  flaged_shld(rsh, lsh)
+    return out, of
+def flaged_shld(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Binary, Flags]:
     rsh_casted = int(cast(rsh, "unsigned"))
     lsh_casted = int(cast(lsh, "unsigned")) if isinstance(lsh, binary_class.Binary) else int(lsh)
 
     output = rsh_casted<<lsh_casted
+
+    of = output > rsh.maximum_value()
+    zf = output==0
+    sf = utils.get_bit_array(rsh._data, rsh._len-1, rsh._len)
+    pf = utils.get_bit_array(rsh._data, 0, rsh._len)
+
     output = binary_class.Binary(output)[len(rsh):2*len(rsh)]
 
-    return output
-def aritmetic_lsh(rsh: binary_class.Binary, lhs: object):
-    sign_bit = rsh.is_negative()
-    rsh = abs(rsh)
-    output = lsh(rsh, lhs)
-    utils.set_bit(output._data, output._len-1, output._len, False)
-    if sign_bit:
-        output = -output
-    return output
+    return output, Flags(of, zf, sf, pf)
 
-def rsh(rsh: binary_class.Binary, lsh: object):
+def arithmetic_wrapping_lsh(rsh: binary_class.Binary, lsh: object) -> binary_class.Binary:
+    out, _ = arithmetic_overflowing_lsh(rsh, lsh)
+    return out
+def arithmetic_overflowing_lsh(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Binary, bool]:
+    out, (of, _, _, _) =  arithmetic_flaged_lsh(rsh, lsh)
+    return out, of
+def arithmetic_flaged_lsh(rsh: binary_class.Binary, lhs: object) -> Tuple[binary_class.Binary, Flags]:
+    lsh_casted = int(cast(lhs, "unsigned")) if isinstance(lhs, binary_class.Binary) else int(lhs)
+
+    sign_bit = rsh.is_negative()
+    rhs = cast(rsh, 'unsigned')
+    rhs[-1] = False
+
+    output, flags = flaged_lsh(rhs, lsh_casted)
+    
+    if output[-1]:
+        flags.of = True
+
+    output[-1] = sign_bit
+    
+    return output, flags
+
+def wrapping_rsh(rsh: binary_class.Binary, lsh: object) -> binary_class.Binary:
+    out, _ = underflowing_rsh(rsh, lsh)
+    return out
+def underflowing_rsh(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Binary, bool]:
+    out, (of, _, _, _) =  flaged_rsh(rsh, lsh)
+    return out, of
+def flaged_rsh(rsh: binary_class.Binary, lhs: object) -> Tuple[binary_class.Binary, Flags]:
     rsh_casted = int(cast(rsh, "unsigned"))
-    lsh_casted = int(cast(lsh, "unsigned")) if isinstance(lsh, binary_class.Binary) else int(lsh)
+    lsh_casted = int(cast(lhs, "unsigned")) if isinstance(lhs, binary_class.Binary) else int(lhs)
  
     if lsh_casted >= 0:
         output = rsh_casted>>lsh_casted
     else:
         output = rsh_casted
+    
+    uf = output<<lsh_casted != rsh_casted
+    zf = output==0
+    sf = rsh[-1]
+    pf = rsh[0]
+    
     output = binary_class.Binary(output, bit_lenght=rsh._len, sign_behavior=rsh._sign_behavior)
-    return output
-def aritmetic_rsh(rhs: binary_class.Binary, lhs: object):
+    
+    return output, Flags(uf, zf, sf, pf)
+
+def arithmetic_flaged_rsh(rhs: binary_class.Binary, lhs: object):
+    lsh_casted = int(cast(lhs, "unsigned")) if isinstance(lhs, binary_class.Binary) else int(lhs)
+
     sign_bit = rhs.is_negative()
-    rhs = abs(rhs)
-    output = rsh(rhs, lhs)
-    utils.set_bit(output._data, output._len-1, output._len, False)
-    if sign_bit:
-        output = -output
-    return output
+    rhs = cast(rhs, 'unsigned')
+    rhs[-1] = False
+
+    output, flags = flaged_rsh(rhs, lsh_casted)
+    
+    output[-lsh_casted-1:] = sign_bit
+    
+    return output, flags

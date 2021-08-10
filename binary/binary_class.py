@@ -44,11 +44,11 @@ class Binary:
         >>> str(num)
         '11111010'
         
-        To int
+        To int conversions to floats have almost no cost (reinterpreting array of bytes)
         >>> int(num)
         250
 
-        To float (much faster than to `int`, but rounding errors show up)
+        To float
         >>> float(num)
         250.0
 
@@ -378,7 +378,20 @@ class Binary:
         h.update(self._data)
         return h.intdigest()
     def __int__(self):
-        return int(utility.to_integer(self._data))
+        if self._sign_behavior == "unsigned":
+            sign_bit = False
+            data_cpy = self._data.copy()
+        else:
+            sign_bit = self.is_negative()
+            data_cpy = self._data.copy()
+            if sign_bit:
+                data_cpy = common.alu.alu_base.arithmeitc_neg_number(data_cpy, self._len, self._mask, self._sign_behavior)
+        value = int.from_bytes(data_cpy.data, 'little')
+        if sign_bit:
+            return -value
+        else:
+            return value
+          
     def __float__(self):
         return float(utility.to_float(self._data))    
 
@@ -438,6 +451,10 @@ class Binary:
                 raise IndexError(f"Value of Starting Index is larger than stopping")
             
             _len = stop-start
+
+            if _len == 0:
+                return 
+
             if isinstance(value, bool) or isinstance(value, int) and value in [1, 0]:
                 value = "1" if bool(value) else "0"
                 value = Binary(value*_len)

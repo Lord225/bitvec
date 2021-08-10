@@ -5,8 +5,6 @@ from binary import *
 
 import timeit
 
-x = Binary("0001", sign_behavior="signed")
-y = Binary("0001", sign_behavior="signed")
+x = Binary("1101 0111", sign_behavior="signed")
 
-print(x.maximum_value())
-print(x.minimum_value())
+print(ops.arithmetic_flaged_lsh(x, 2))

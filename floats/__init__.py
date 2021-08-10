@@ -14,7 +14,7 @@ def fp(_input: str) -> float:
 
         return IntNum+RealNum/(2**len(Real))
 
-class Converter:
+class FloatPoint:
     def __init__(self, MANTISA_SIZE: int, EXPONENTIAL_SIZE: int, SIGN_FLAG: bool):
         self.MANTISA_SIZE = MANTISA_SIZE
         self.EXPONENTIAL_SIZE = EXPONENTIAL_SIZE
