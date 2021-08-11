@@ -248,13 +248,13 @@ class Binary:
         if round(i) != i:
             raise ValueError("Cannot convert from none-integer value, try using float module.")
         else:
-            self.__from_integer(int(i))
+            self.__from_integer(int(i), False)
 
     def __generate_from_iterable(self, Iter: Iterable):
         return [bool(i) for i in Iter]
     def __generate_from_string(self, my_str: str):
         if not my_str:
-            return 0
+            return 0, 1
         my_str = ''.join(my_str.strip().split())
         len_override = None
         
@@ -474,7 +474,7 @@ class Binary:
     #####################
 
     def __bool__(self):
-        return True if (self._data==0).all() else False
+        return False if (self._data==0).all() else True
     def __hash__(self):
         h = xxhash.xxh64()
         h.update(self._data)
@@ -495,7 +495,9 @@ class Binary:
             return value
           
     def __float__(self):
-        return float(utility.to_float(self._data))    
+        return float(utility.to_float(self._data))
+    def __index__(self):
+        return int(self)
 
     #####################
     #      Utility      #
