@@ -1,7 +1,7 @@
-from binary.common import utils
+from pybytes.common import utils
 from typing import Dict, Literal, Tuple, Union
-import binary.common.aritmetic.aritmetic_base as alu_base
-import binary.binary_class as binary_class
+import pybytes.common.aritmetic.aritmetic_base as alu_base
+import pybytes.binary_class as binary_class
 import numpy as np
 
 class Flags:

@@ -1,10 +1,10 @@
-import floats as fs
+import pybytes.floats as fs
 import numpy as np
 
-from binary import *
+from pybytes import *
 
 import timeit
 
-x = Binary("1101 0111", sign_behavior="signed")
+x = Binary('1111 0010')
 
-print(ops.arithmetic_flaged_lsh(x, 2))
+print(x.strip_right())

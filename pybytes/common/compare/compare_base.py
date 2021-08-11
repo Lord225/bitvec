@@ -1,6 +1,6 @@
 import numpy as np
 import numba as nb
-import binary.common.utils as utils
+import pybytes.common.utils as utils
 
 @nb.njit(cache=True)
 def greater_compare_arrays(a: np.array, b: np.array) -> bool:

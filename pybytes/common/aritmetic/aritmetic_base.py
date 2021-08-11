@@ -1,7 +1,7 @@
 from typing import Dict, Tuple
 import numpy as np
 import numba as nb
-import binary.common.utils as utils
+import pybytes.common.utils as utils
 
 @nb.njit(cache=True)
 def add_arrays(rsh: np.ndarray, lsh: np.ndarray, mask: np.ndarray, carry: int = 0) -> Tuple[np.ndarray, bool, bool, bool, bool]:
@@ -37,8 +37,8 @@ def sub_arrays(rsh: np.ndarray, lsh: np.ndarray, rsh_len: int, lsh_len: int, mas
 
     output, of, zf, sf, pf = add_arrays(arg1, arg2, mask, 1)
     
-    if sign_behavior == "magnitute":
-        output = to_magnitute(output, len_max, mask, "signed", False, True)
+    if sign_behavior == "magnitude":
+        output = to_magnitude(output, len_max, mask, "signed", False, True)
     if sign_behavior == "unsigned":
         output = to_unsigned(output, len_max, mask, "signed", False, True)
     return output, of, zf, sf, pf
@@ -48,7 +48,7 @@ def arithmeitc_neg_number(value: np.ndarray, num_lenght: int, mask: np.ndarray, 
     value = value.copy()
     if sign_behavior == "unsigned":
         return value
-    elif sign_behavior == "magnitute":
+    elif sign_behavior == "magnitude":
         utils.set_bit(value, num_lenght-1, num_lenght, not utils.get_bit_array(value, num_lenght-1, num_lenght))
         return value
     elif sign_behavior == "signed":
@@ -83,7 +83,7 @@ def to_signed(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_behavio
         return value
     elif sign_behavior == "signed":
         return value
-    elif sign_behavior == "magnitute":
+    elif sign_behavior == "magnitude":
         if utils.get_bit_array(value, num_lenght-1, num_lenght):
             # Negative value
             utils.set_bit(value, num_lenght-1, num_lenght, 0)
@@ -94,7 +94,7 @@ def to_signed(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_behavio
             return value
     return value
 @nb.njit(cache=True)
-def to_magnitute(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_behavior: str, abs: bool, allow_overflow: bool) -> np.ndarray:
+def to_magnitude(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_behavior: str, abs: bool, allow_overflow: bool) -> np.ndarray:
     value = value.copy()
     if sign_behavior == "unsigned":
         if utils.get_bit_array(value, num_lenght-1, num_lenght) and not allow_overflow:
@@ -105,7 +105,7 @@ def to_magnitute(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_beha
             value = arithmeitc_neg_number(value, num_lenght, mask, "signed")
             utils.set_bit(value, num_lenght-1, num_lenght, 1)
         return value
-    elif sign_behavior == "magnitute":
+    elif sign_behavior == "magnitude":
         return value
     return value
 @nb.njit(cache=True)
@@ -120,16 +120,16 @@ def to_unsigned(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_behav
             elif not allow_overflow:  
                 raise ValueError("Value overflow.") 
         return value
-    elif sign_behavior == "magnitute":
+    elif sign_behavior == "magnitude":
         if utils.get_bit_array(value, num_lenght-1, num_lenght):
             if abs:
-                value = arithmeitc_neg_number(value, num_lenght, mask, "magnitute")
+                value = arithmeitc_neg_number(value, num_lenght, mask, "magnitude")
             elif not allow_overflow:
                 raise ValueError("Value overflow.") 
         return value
     return value
 
-sign_convert = {"unsigned": to_unsigned, "magnitute": to_magnitute, "signed": to_signed}
+sign_convert = {"unsigned": to_unsigned, "magnitude": to_magnitude, "signed": to_signed}
 
 @nb.njit(cache=True) 
 def bitwise_and(rsh: np.ndarray, lsh: np.ndarray, mask: np.ndarray):

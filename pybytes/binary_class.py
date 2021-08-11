@@ -1,11 +1,12 @@
+from hashlib import new
 from typing import Iterable, List, Literal, Union, Tuple, NewType
 import numpy as np
 import xxhash
-from binary.common import utility
-import binary.common as common
+from pybytes.common import utility
+import pybytes.common as common
 
 class Binary:
-    def __init__(self, object: object = None, bit_lenght=None, bytes_lenght = None, sign_behavior: Literal["unsigned", "magnitude", "signed"] = None):
+    def __init__(self, object: object = None, bit_lenght=None, bytes_lenght = None, sign_behavior: Literal["unsigned", "magnitude", "signed"] = None, reversed_display = False):
         """## Binary
         Class that represent numbers in binary. Wraps arithmetic to bouds of the binary number, 
         allows for quick and easy bit manipulation.
@@ -77,14 +78,26 @@ class Binary:
 
         *NOTE* that behavior of slicing is slighty diffrent from slicing pythons `str` or list, first bit is from far right, not left.
         
-        ### Usefull alias methods
-        There is few methods that will simplyfy slicing like
+        ## Public Methods
+        ### Aliases for slicing number:
         * high_byte
         * low_byte
         * extended_low
         * extended_high
         * get_byte
-        *cc 
+        ### Information about number
+        * sign_behavior
+        * maximal_value
+        * minimal_value
+        * leading_zeros
+        * trailing_zeros
+        * is_negative
+        ### Modifying
+        * append_high
+        * append_low
+        * strip
+        * strip_right
+
         
         ### Modify by Index
         You can modify bits with indexes:
@@ -140,6 +153,7 @@ class Binary:
         """
 
         self._sign_behavior = sign_behavior
+        self._reversed_display = reversed_display
 
         if bytes_lenght is not None and bit_lenght is not None and bytes_lenght!=bit_lenght*8:
             raise ValueError(f"Passed conflicting sizes")
@@ -153,21 +167,25 @@ class Binary:
         if object is None:
             if self._len is None:
                 self._len = 1
-            self = np.zeros((len(self)),dtype=np.uint8)
-
+            self._data = np.zeros((len(self)),dtype=np.uint8)
+        from_str = False
         if isinstance(object, str):
             object, new_len = self.__generate_from_string(object)
+            from_str = True
             self._len = new_len if self._len is None and new_len is not None else self._len
 
         if isinstance(object, int):
-            self.__from_integer(object)
+            self.__from_integer(object, do_not_add_sign_bit=from_str)
         elif isinstance(object, np.ndarray):
             self.__from_ndarray(object)
         elif isinstance(object, Iterable):
            self.__from_iterable(object)
         elif isinstance(object, Binary):
             self.__copy(object)
-        
+        elif isinstance(object, float):
+            self.__from_float(object)
+        elif isinstance(object, bool):
+            self.__from_integer(object!=0)
         self._sign_behavior = self._sign_behavior if self._sign_behavior is not None else "unsigned"
         
         self.__fix_zero_lenght()
@@ -194,12 +212,12 @@ class Binary:
         object = array.astype('uint8')
         self._data = object
         self._len = len(self._data)*8 if self._len is None else self._len
-    def __from_integer(self, obj):
+    def __from_integer(self, obj, do_not_add_sign_bit):
         if obj == 0:
             self._len = 1 if self._len is None else self._len
             self._data = np.zeros((1,), dtype=np.uint8)
         elif obj > 0:
-            self.__from_number(obj)
+            self.__from_number(obj, do_not_add_sign_bit)
         else:
             self.__from_negative_integer(obj)
     def __from_negative_integer(self, i: int):
@@ -216,11 +234,21 @@ class Binary:
         self.__generate_bitmask() # early bitmask generation.
         negate = common.alu.arithmetic_neg(self)
         self.__copy(negate)
-    def __from_number(self, i: int):
+    def __from_number(self, i: int, do_not_add_sign_bit: bool):
         assert i > 0
         self._len = i.bit_length() if self._len is None else self._len
+
+        if not do_not_add_sign_bit:
+            if self._sign_behavior != 'unsigned' and self._sign_behavior is not None:
+                self._len += 1
+
         buffer = i.to_bytes(utility.bytes_for_len(self._len), "little")
         self._data = np.frombuffer(buffer, dtype=np.uint8)
+    def __from_float(self, i: float):
+        if round(i) != i:
+            raise ValueError("Cannot convert from none-integer value, try using float module.")
+        else:
+            self.__from_integer(int(i))
 
     def __generate_from_iterable(self, Iter: Iterable):
         return [bool(i) for i in Iter]
@@ -231,15 +259,18 @@ class Binary:
         len_override = None
         
         try:
-            number = int(my_str, 2)
-            len_override = len(my_str.removeprefix("0b"))
+            striped = my_str.removeprefix("0b")
+            number = int(striped, 2)
+            len_override = len(striped)
         except:
             try:
-                number = int(my_str.removeprefix("0x"), 16)
-                len_override = 4*len(my_str)
+                striped = my_str.removeprefix("0x")
+                number = int(striped, 16)
+                len_override = 4*len(striped)
             except:
                 try:
                     number = int(my_str, 0)
+                    len_override = number.bit_length()
                 except:
                     raise ValueError(f"Value: '{my_str}' is invalid")
         return number, len_override
@@ -316,7 +347,7 @@ class Binary:
         """Returns sign behavior of the number. Possible values are:
         * unsigned
         * signed
-        * magnitute
+        * magnitude
         Default sign behavior is `unsigned`. If sign is needed `signed` is used insted.
         """
         return self._sign_behavior
@@ -345,6 +376,77 @@ class Binary:
         else:
             return int(-2**(len(self)-1))
     
+    def append_high(self, bit: bool):
+        new_binary = Binary(None, bit_lenght=len(self)+1, sign_behavior=self.sign_behavior())
+        new_binary._data[:len(self._data)] = self._data
+        new_binary[-1] = bit
+        return new_binary
+    def append_low(self, bit: bool):
+        raise NotImplementedError()
+
+    def strip(self):
+        """Removes leading zeros
+        
+        >>> Binary("0000 1000").strip()
+        "1000"
+        """
+        return Binary(int(self), sign_behavior=self._sign_behavior, reversed_display=self._reversed_display)
+    def strip_right(self):
+        """Removes trailing zeros
+        
+        >>> Binary("1001 1000").strip_right()
+        "1011"
+        """
+        zeros = self.trailing_zeros()
+        return self[zeros:]
+
+    def trailing_zeros(self):
+        """Returns amount of trailing zeros
+        
+        >>> Binary("0001 0000").trailing_zeros()
+        4
+        >>> Binary("0000 0001").trailing_zeros()
+        0
+        >>> Binary("0000 0000").trailing_zeros()
+        8
+        """
+        return utility.trailing_zeros(self._data, self._len)
+    def leading_zeros(self):
+        """Returns amount of leading zeros
+        
+        >>> Binary("0001 0000").leading_zeros()
+        3
+        >>> Binary("0000 0001").leading_zeros()
+        7
+        >>> Binary("0000 0000").leading_zeros()
+        8
+        """
+        return utility.leading_zeros(self._data, self._len)
+    def trailing_ones(self):
+        """ NOT IMPLEMENTED
+        Returns amount of trailing ones 
+        
+        >>> Binary("1110 1111").trailing_ones()
+        4
+        >>> Binary("1111 1110").trailing_ones()
+        0
+        >>> Binary("1111 1111").trailing_ones()
+        8
+        """
+        return utility.trailing_ones(self._data, self._len)
+    def leading_ones(self):
+        """
+        Returns amount of leading ones 
+        
+        >>> Binary("1110 1111").leading_ones()
+        3
+        >>> Binary("1111 1110").leading_ones()
+        7
+        >>> Binary("1111 1111").leading_ones()
+        8
+        """
+        return utility.leading_ones(self._data, self._len)
+
     #####################
     #     Comparing     #
     #####################
@@ -419,8 +521,13 @@ class Binary:
 
     def __getitem__(self, key):
         if isinstance(key, slice):
+            stop = key.stop
+            
+            stop = stop if stop is not None else self._len
+            stop =  len(self) + stop if stop < 0 else stop
+            
             as_str = format(self, 's')[::-1]
-            as_str += "0"*(key.stop-len(as_str))
+            as_str += "0"*(stop-len(as_str))
             return Binary(as_str[key][::-1])
         elif isinstance(key, int):
             key = len(self) + key if key < 0 else key
@@ -529,7 +636,7 @@ class Binary:
         else:
             return self
 
-    def __format__(self, spec):
+    def __format(self, spec):
         if not spec:
             if self._len%8 == 0:
                 spec = "b"
@@ -547,6 +654,15 @@ class Binary:
         chunks = list(reversed(np.array_split(self._data, len(self._data)//jump)))
         
         return " ".join([(''.join((np.binary_repr(i, 8)) for i in reversed(chunk))) for chunk in chunks])
+
+    def __format__(self, spec):
+        formatted = self.__format(spec)
+        if self._reversed_display:
+            if len(self._reversed_display) == 1:
+                return f'{self._reversed_display}{formatted[::-1]}'
+            else:
+                return formatted[::-1]
+        return formatted
     def __repr__(self) -> str:
         return format(self)
 
