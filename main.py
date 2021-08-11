@@ -5,7 +5,8 @@ from pybytes import *
 
 import timeit
 import math
-f = floats.CustomFloat(10, 5)
 
-print('{:.10f}'.format(f.get_float('0001')))
-print(f.get_hex(0.3333333333333333333))
+f = floats.CustomFloat(preset='fp16')
+
+print(f.get(0.1))
+print(f.get('2e66'))

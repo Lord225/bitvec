@@ -192,7 +192,7 @@ class Binary:
         self.__strip_array_to_lenght()
         self.__generate_bitmask()
         self.__apply_mask()
-        self.__check_internal_integridy()
+        self.__selfcheck()
 
     #######################
     #     Constructors    #
@@ -287,7 +287,7 @@ class Binary:
             self._data = self._data[:target_bytes]
         elif target_bytes > lenght:
             self._data = np.append(self._data, [np.uint8(0)]*(target_bytes-lenght))
-    def __check_internal_integridy(self):
+    def __selfcheck(self):
         REQUIRED_ATTRIBUTES = [("_data", np.ndarray), ("_len", int), ("_mask", np.ndarray), ("_sign_behavior", str)]
 
         assert all((hasattr(self, ATTR) and isinstance(getattr(self, ATTR), TYPE) for ATTR, TYPE in REQUIRED_ATTRIBUTES)), "Missing internal components of Binary object."

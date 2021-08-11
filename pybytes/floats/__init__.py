@@ -43,7 +43,9 @@ def normalalize_float(f: float):
         counter += 1
         f /= 2
     return f, counter
-
+def normalize_float_but_allow_for_denormalized(f: float, max: int):
+    f = f*2**-max
+    return f, 0
 def to_float(object: object):
     if isinstance(object, str):
         as_float = fp(object)
@@ -66,8 +68,7 @@ def split_to_fixed(object: object, binary_places = 200, target_decimal_precision
     out_frac = float_to_binary(frac, binary_places)
     
     return Splitted(out_frac, out_whole, Binary(sign))
-def denormalize_mantissa():
-    pass
+
 def mantissa_to_float(num: Binary, denormalized)-> float:
     out = 0.0 if denormalized else 1.0
     
@@ -94,21 +95,35 @@ class Splitted:
 
 
 class CustomFloat:
-    def __init__(self, MANTISA_SIZE: int, EXPONENTIAL_SIZE: int, EXPONENT_BIAS = None):
-        self.MANTISA_SIZE = MANTISA_SIZE
-        self.EXPONENTIAL_SIZE = EXPONENTIAL_SIZE
-        self.EXPONENT_BIAS = -abs(EXPONENT_BIAS) if EXPONENT_BIAS is not None else -(2**(EXPONENTIAL_SIZE-1)-1)
+    PRESETS = {'fp8':(4, 3), 'fp16':(5, 10), 'fp32':(8, 23), 'bf16':(8, 7), 'tf':(8, 10), 'fp24':(7, 16), 'pxr24':(8, 15)}
+    def __init__(self, mantissa_size: int = None, exponent_size: int = None, exponent_bias = None, preset=None):
+        if preset is not None:
+            if preset in self.PRESETS:
+                exponent_size = self.PRESETS[preset][0]
+                mantissa_size = self.PRESETS[preset][1]
+        self.MANTISA_SIZE = mantissa_size
+        self.EXPONENTIAL_SIZE = exponent_size
+        self.EXPONENT_BIAS = -abs(exponent_bias) if exponent_bias is not None else -(2**(exponent_size-1)-1)
+
+        self.__selfcheck()
+    
+    def __selfcheck(self):
+        assert self.MANTISA_SIZE is not None and self.MANTISA_SIZE > 0
+        assert self.EXPONENTIAL_SIZE is not None and self.EXPONENTIAL_SIZE > 0
+        assert self.EXPONENT_BIAS is not None and self.EXPONENT_BIAS < 0
     def __call__(self, *args, **kwds):
         pass
-    def get(self, object: object):
+    def get_parts(self, object: object):
         as_float = to_float(object)
         
         sign = as_float < 0
         as_float = abs(as_float)
 
         normalized, count = normalalize_float(as_float)
-
-        biased_count = count-self.EXPONENT_BIAS
+        if count < -2**(self.EXPONENTIAL_SIZE-1):
+            normalized, biased_count = normalize_float_but_allow_for_denormalized(as_float, -(self.EXPONENT_BIAS+1))
+        else:
+            biased_count = count-self.EXPONENT_BIAS
 
         manissa = Binary(bit_lenght=self.MANTISA_SIZE)
         splitted = split_to_fixed(normalized)
@@ -118,7 +133,7 @@ class CustomFloat:
     def __len__(self):
         return self.EXPONENTIAL_SIZE+self.MANTISA_SIZE+1
     def get_concat(self, object: object):
-        sign, manissa, exp = self.get(object)
+        sign, manissa, exp = self.get_parts(object)
         total_size = len(self)
         
         output = Binary(bit_lenght=total_size)
@@ -127,6 +142,15 @@ class CustomFloat:
         output[:-self.EXPONENTIAL_SIZE-1] = manissa
 
         return output
+    def get(self, object: object):
+        if isinstance(object, str):
+            try:
+                x = int(object, 16)
+                if len(Binary(object)) == len(self):
+                    return self.get_float(object)
+            except:
+                pass
+        return self.get_hex(object)
     def get_hex(self, object: object):
         num = self.get_concat(object)
         return "{0:#0{1}x}".format(int(num), math.ceil(len(self)/4)+2)
