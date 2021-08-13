@@ -15,16 +15,16 @@ from pybytes import *
 x = Binary('0110')
 print(x, len(x)) # prints '0110 4'
 
-y = Binary('1110')
+y = Binary(1, bit_lenght=9) # You can specify any len you want.
 
-# Arithmetic correctly wraps
-print(int(x+y)) # prints 4
+# Support for operations
+print(int(~(x+y))) # prints 504 (~000000111)
 
-# But you can check status of operation
-print(ops.flaged_add(x, y)) # flaged_add returns tuple: (0100, Flags(of=True, zf=False, sf=False, pf=False)), where object Flags contains status of operation.
+# Arithmetic correctly wraps and you can check the status 
+print(ops.overflowing_add(x, '1100')) # overflowing_add return the wrapped sum and boolen to indicate if overflow occurs
 
-x[0] = True  # Set first bit to High
-print(x[:3]) # prints first 3 bits.
+x[0] = True  # Set first bit to high
+print(x[:3]) # prints first 3 bits
 
 x[:3] = "010" # sets first 3 bits to '010'
 print(x) # '0010'
