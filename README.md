@@ -36,11 +36,13 @@ This module contains some tools to work with float point numbers
 from pybytes import *
 
 f = floats.CustomFloat(preset='fp16') # Create 16 bit float point https://en.wikipedia.org/wiki/Half-precision_floating-point_format
-print(f(0.25)) # Convert python float to custom value
-print(f('0x3c00')) # prints 1.0 becouse hexadecimal 
-print(f(2.0).as_hex()) # prints 2.0 in fp16 in hex
+
+print(f(0.25)) # Convert python float to binary value
+print(f('0x3c00')) # prints 1.0
+print(f(2.0).as_hex()) # prints 2.0 representation in hex
 
 f2 = floats.CustomFloat(mantissa_size=3, exponent_size=3)
 
 print(f2(f2(4.256))) # 4.256 is wraped to 4.0 becouse it is impossible to express with this float.
+print(len(f2)) # len in bits of this float (3+3+1 = 7 bits)
 ```
