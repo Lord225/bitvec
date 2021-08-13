@@ -32,7 +32,7 @@ print(x) # '0010'
 
 This module contains some tools to work with float point numbers
 
-```
+```py
 from pybytes import *
 
 f = floats.CustomFloat(preset='fp16') # Create 16 bit float point https://en.wikipedia.org/wiki/Half-precision_floating-point_format
