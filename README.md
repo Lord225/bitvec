@@ -40,6 +40,7 @@ f = floats.CustomFloat(preset='fp16') # Create 16 bit float point https://en.wik
 print(f(0.25)) # Convert python float to binary value
 print(f('0x3c00')) # prints 1.0
 print(f(2.0).as_hex()) # prints 2.0 representation in hex
+print(f(mantissa='11 0000 0000', exponent=15)) # 1.11_2 * 2**(15-15) = 1.75
 
 f2 = floats.CustomFloat(mantissa_size=3, exponent_size=3)
 
