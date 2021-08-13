@@ -2,10 +2,10 @@
 
 Tools written in python for quick bit manipulation on arbitrary sized number. 
 It aims to:
-* Make it simpler to swap bits than with native python ints
-* Correctly wraps numbers in arithmetic operations
-* Emulates behavior of unsigned, signed and Sign-module
-* Try not to be pathetically slow
+* Simpler to manipulate bits than with native python ints
+* Correctly wrap numbers in arithmetic operations
+* Emulate behavior of unsigned, signed and sign-module 
+* Not to be pathetically slow (builded with numpy and numba)
 
 Example use:
 ```py
