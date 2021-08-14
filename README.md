@@ -11,7 +11,7 @@ Example use:
 ```py
 from pybytes import *
 
-# creating new number, size is inferred from parameter
+# creating new number, size is inferred from leading zeros
 x = Binary('0110')
 print(x, len(x)) # prints '0110 4'
 
