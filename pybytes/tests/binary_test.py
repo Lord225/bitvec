@@ -38,6 +38,10 @@ class TestConstruct(unittest.TestCase):
         value = Binary(-1, bit_lenght=9)
         self.assertEqual(value.sign_behavior(), 'signed')
         self.assertEqual(str(value), '111111111')
+
+        value = Binary(-1, bit_lenght=2)
+        self.assertEqual(value.sign_behavior(), 'signed')
+        self.assertEqual(str(value), '11')
     def test_from_int_magnitute(self):
         value = Binary(-1, sign_behavior='magnitude')
         self.assertEqual(value.sign_behavior(), 'magnitude')
@@ -94,7 +98,7 @@ class TestConstruct(unittest.TestCase):
 
     def test_rises(self):
         with self.assertRaises(Exception):
-            Binary(0,bytes_lenght=2, bit_lenght=1)
+            Binary(0, bytes_lenght=2, bit_lenght=1)
 
 
 class TestCompare(unittest.TestCase):
@@ -230,11 +234,21 @@ class TestAssigns(unittest.TestCase):
         self.assertEqual(x[0], False)
         self.assertEqual(x[1], True)
         self.assertEqual(x[2], False)
+
+        x = Binary("1 10000010")
+        self.assertEqual(x[7], True)
+        self.assertEqual(x[8], True)
+        self.assertEqual(x[-1], True)
     def test_read_slice_key(self):
         x = Binary("10000010")
         self.assertEqual(x[0:3], "010")
         self.assertEqual(x[:3], "010")
         self.assertEqual(x[-3:], "100")
+        
+        x = Binary("1 10000010")
+        self.assertEqual(x[:-3], "000010")
+        self.assertEqual(x[-5:-1], '1000')
+        self.assertEqual(x[5:7], '00')
     def test_assign_slice_key(self):
         x = Binary("10000010")
         y = Binary("101")
@@ -259,6 +273,8 @@ class TestAssigns(unittest.TestCase):
         x = Binary("00000000")
         x[[1,3,5]] = True
         self.assertEqual(str(x), "00101010")
+        x[[-1,7,0]] = True
+        self.assertEqual(str(x), "10101011")
     def test_illegal_assigns(self):
         x = Binary("10000010")
         with self.assertRaises(Exception):

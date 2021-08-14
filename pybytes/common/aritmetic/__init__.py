@@ -32,7 +32,7 @@ def overflowing_add(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class
     return out, of
 def flaged_add(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Binary, Flags]:
     if not isinstance(lsh, binary_class.Binary):
-        lsh = binary_class.Binary(lsh, sign_behavior=rsh._sign_behavior)
+        lsh = binary_class.Binary(lsh, bit_lenght=len(rsh), sign_behavior=rsh._sign_behavior)
     if lsh._sign_behavior != rsh._sign_behavior:
         raise ValueError()
     new_mask = utils.get_mask_union(rsh._mask, lsh._mask)
@@ -48,7 +48,7 @@ def overflowing_sub(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class
     return out, of
 def flaged_sub(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Binary, Flags]:
     if not isinstance(lsh, binary_class.Binary):
-        lsh = binary_class.Binary(lsh, sign_behavior=rsh._sign_behavior)
+        lsh = binary_class.Binary(lsh, bit_lenght=len(rsh), sign_behavior=rsh._sign_behavior)
     
     new_mask = utils.get_mask_union(rsh._mask, lsh._mask)
     new_len = max(rsh._len, lsh._len)
@@ -61,7 +61,14 @@ def flaged_sub(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Bina
     return binary_class.Binary(out_data, bit_lenght=new_len, sign_behavior=lsh._sign_behavior), Flags(of, zf, sf, pf)
 
 def flaged_mul(rsh: binary_class.Binary, lsh: object)-> Tuple[binary_class.Binary, Flags]:
-    pass
+    if not isinstance(lsh, binary_class.Binary):
+        lsh = binary_class.Binary(lsh, bit_lenght=len(rsh), sign_behavior=rsh._sign_behavior)
+
+    rsh_as_int = int(rsh)
+    lsh_as_int = int(lsh)
+
+    output = (rsh_as_int*lsh_as_int)%rsh.maximum_value()
+    
 
 def bitwise_not(tar: binary_class.Binary):
     _not_data = alu_base.bitwise_neg_array(tar._data, tar._mask)

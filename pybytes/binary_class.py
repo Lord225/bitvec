@@ -1,12 +1,14 @@
-from hashlib import new
 from typing import Iterable, List, Literal, Union, Tuple, NewType
 import numpy as np
+from numpy.lib.arraypad import pad
 import xxhash
 from pybytes.common import utility
 import pybytes.common as common
+import re
+from textwrap import wrap
 
 class Binary:
-    def __init__(self, object: object = None, bit_lenght=None, bytes_lenght = None, sign_behavior: Literal["unsigned", "magnitude", "signed"] = None, reversed_display = False):
+    def __init__(self, object: object = None, bit_lenght: int=None, bytes_lenght:int = None, sign_behavior: Literal["unsigned", "magnitude", "signed"] = None, signed: bool=None,  default_formatting:str = None):
         """## Binary
         Class that represent numbers in binary. Wraps arithmetic to bouds of the binary number, 
         allows for quick and easy bit manipulation.
@@ -16,6 +18,8 @@ class Binary:
         * bit_lenght - Target lenght of the number in bits. This number can be inferred from object based on its value, extra zeros ect
         * bytes_lenght - Target lenght of the number in bytes. Same as bit_lenght but in bytes.
         * sign_behavior - How number should implement sign.
+        * signed - if passed, will set sign_behavior to 'signed'
+        * default_formatting - formatting that will be applied if no other formating was passed
 
         ## Examples
 
@@ -29,7 +33,7 @@ class Binary:
         '1011'
         >>> Binary("0000 0001") # Ignores whitespace
         '00000001'
-        >>> Binary("ff Aa C   C") # Works with diffrent radix too
+        >>> Binary("ff Aa C   C") # Works with hex too
         '11111111 10101010 11001100'
 
         ### Alias
@@ -151,9 +155,10 @@ class Binary:
         ## See also
 
         """
-
+        if signed == True:
+            sign_behavior = 'signed'
         self._sign_behavior = sign_behavior
-        self._reversed_display = reversed_display
+        self._default_formatting = default_formatting
 
         if bytes_lenght is not None and bit_lenght is not None and bytes_lenght!=bit_lenght*8:
             raise ValueError(f"Passed conflicting sizes")
@@ -168,6 +173,8 @@ class Binary:
             if self._len is None:
                 self._len = 1
             self._data = np.zeros((len(self)),dtype=np.uint8)
+
+
         from_str = False
         if isinstance(object, str):
             object, new_len = self.__generate_from_string(object)
@@ -203,7 +210,6 @@ class Binary:
         self.__generate_bitmask()
         if self._sign_behavior != None and to_copy._sign_behavior != self._sign_behavior:
             self._data = common.alu.alu_base.sign_convert[to_copy._sign_behavior](self._data, self._len, self._mask, self._sign_behavior, False)
-
     def __from_iterable(self, iterable):
         bits = self.__generate_from_iterable(iterable)
         self._len = len(bits) if self._len is None else self._len 
@@ -220,14 +226,21 @@ class Binary:
             self.__from_number(obj, do_not_add_sign_bit)
         else:
             self.__from_negative_integer(obj)
-    def __from_negative_integer(self, i: int):
+    def __from_negative_integer(self, val: int):
         if self._sign_behavior == None:
             self._sign_behavior = 'signed'
         elif self._sign_behavior == "unsigned":
             raise ValueError()
-        i = abs(i)
+        
+        i = abs(val)
 
         self._len = i.bit_length()+1 if self._len is None else self._len
+
+        if val > self.maximum_value():
+            raise ValueError(f"Number {val} is too big for {self.sign_behavior()} lenght: {len(self)}")
+        if val < self.minimum_value():
+            raise ValueError(f"Number {val} is too big for {self.sign_behavior()} lenght: {len(self)}")
+
         buffer = i.to_bytes(utility.bytes_for_len(self._len), "little")
         self._data = np.frombuffer(buffer, dtype=np.uint8)
         
@@ -236,11 +249,10 @@ class Binary:
         self.__copy(negate)
     def __from_number(self, i: int, do_not_add_sign_bit: bool):
         assert i > 0
-        self._len = i.bit_length() if self._len is None else self._len
-
-        if not do_not_add_sign_bit:
-            if self._sign_behavior != 'unsigned' and self._sign_behavior is not None:
-                self._len += 1
+        self._len = i.bit_length() + (1 if self._sign_behavior in ['signed', 'magnitude'] and not do_not_add_sign_bit else 0) if self._len is None else self._len
+        
+        if i > self.maximum_value() and not do_not_add_sign_bit:
+            raise ValueError(f"Number {i} is too big for lenght: {len(self)}")
 
         buffer = i.to_bytes(utility.bytes_for_len(self._len), "little")
         self._data = np.frombuffer(buffer, dtype=np.uint8)
@@ -249,7 +261,6 @@ class Binary:
             raise ValueError("Cannot convert from none-integer value, try using float module.")
         else:
             self.__from_integer(int(i), False)
-
     def __generate_from_iterable(self, Iter: Iterable):
         return [bool(i) for i in Iter]
     def __generate_from_string(self, my_str: str):
@@ -274,9 +285,9 @@ class Binary:
                 except:
                     raise ValueError(f"Value: '{my_str}' is invalid")
         return number, len_override
+    
     def __generate_bitmask(self):
         self._mask = np.packbits([1]*self._len, bitorder='little')
-
     def __fix_zero_lenght(self):
         if self._len == 0:
             self._len = 1
@@ -350,7 +361,7 @@ class Binary:
         * magnitude
         Default sign behavior is `unsigned`. If sign is needed `signed` is used insted.
         """
-        return self._sign_behavior
+        return "unsigned" if self._sign_behavior is None else self._sign_behavior
     def maximum_value(self):
         """Maximal value of this number
         >>> Binary('0000').maximum_value()
@@ -359,7 +370,7 @@ class Binary:
         >>> Binary('0000', sign_behavior='signed').maximum_value()
         7
         """
-        if self._sign_behavior == "unsigned":
+        if self._sign_behavior == "unsigned" or self._sign_behavior is None:
             return int(2**len(self)-1)
         else:
             return int(2**(len(self)-1)-1)
@@ -371,18 +382,20 @@ class Binary:
         >>> Binary('0000', sign_behavior='signed').minimum_value()
         -8
         """
-        if self._sign_behavior == "unsigned":
+        if self._sign_behavior == "unsigned" or self._sign_behavior is None:
             return 0
         else:
             return int(-2**(len(self)-1))
     
     def append_high(self, bit: bool):
-        new_binary = Binary(None, bit_lenght=len(self)+1, sign_behavior=self.sign_behavior())
-        new_binary._data[:len(self._data)] = self._data
+        new_binary = Binary(self._data, bit_lenght=len(self)+1, sign_behavior=self.sign_behavior())
         new_binary[-1] = bit
         return new_binary
     def append_low(self, bit: bool):
-        raise NotImplementedError()
+        new_binary = Binary(self._data, bit_lenght=len(self)+1, sign_behavior=self.sign_behavior())
+        new_binary = common.alu.wrapping_lsh(new_binary, 1)
+        new_binary[0] = bit
+        return new_binary
 
     def strip(self):
         """Removes leading zeros
@@ -400,7 +413,7 @@ class Binary:
         zeros = self.trailing_zeros()
         return self[zeros:]
 
-    def trailing_zeros(self):
+    def trailing_zeros(self) -> int:
         """Returns amount of trailing zeros
         
         >>> Binary("0001 0000").trailing_zeros()
@@ -411,7 +424,7 @@ class Binary:
         8
         """
         return utility.trailing_zeros(self._data, self._len)
-    def leading_zeros(self):
+    def leading_zeros(self) -> int:
         """Returns amount of leading zeros
         
         >>> Binary("0001 0000").leading_zeros()
@@ -422,7 +435,7 @@ class Binary:
         8
         """
         return utility.leading_zeros(self._data, self._len)
-    def trailing_ones(self):
+    def trailing_ones(self) -> int:
         """ NOT IMPLEMENTED
         Returns amount of trailing ones 
         
@@ -434,7 +447,7 @@ class Binary:
         8
         """
         return utility.trailing_ones(self._data, self._len)
-    def leading_ones(self):
+    def leading_ones(self) -> int:
         """
         Returns amount of leading ones 
         
@@ -453,19 +466,14 @@ class Binary:
 
     def __lt__(self, other):
         return common.cmp.less(self, other)
-    
-    def __le__(self, other):
-        return not self.__gt__(other)
-
-    def __gt__(self, other):
-        return common.cmp.greater(self, other)
-    
-    def __ge__(self, other):
-        return not self.__lt__(other)
-    
     def __eq__(self, other):
         return common.cmp.equal(self, other)
-    
+    def __gt__(self, other):
+        return common.cmp.greater(self, other)   
+    def __le__(self, other):
+        return not self.__gt__(other)
+    def __ge__(self, other):
+        return not self.__lt__(other)
     def __ne__(self, other):
         return not self.__eq__(other)
     
@@ -503,14 +511,21 @@ class Binary:
     #      Utility      #
     #####################
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._len
-    def is_negative(self):
+    def is_negative(self) -> bool:
+        """Returns True if number is less than zero. Unsigned numbers always returns True."""
         if self._sign_behavior == "unsigned":
             return False
         else:
             return self[-1] != 0
-    def __in_bounds(self, value):
+    def to_string(self) -> str:
+        """Converts binary number to string of ones and zeros"""
+        return utility.format_binary(self._data, '')[-len(self):]
+    def as_hex(self) -> str:
+        """Converts binary number to hexadecimal represenation"""
+        return utility.format_hex(self._data, '')[-len(self)//4:]
+    def __in_bounds(self, value) -> bool:
         if value<0:
             return False
         if value>=self._len:
@@ -528,7 +543,7 @@ class Binary:
             stop = stop if stop is not None else self._len
             stop =  len(self) + stop if stop < 0 else stop
             
-            as_str = format(self, 's')[::-1]
+            as_str = self.to_string()[::-1]
             as_str += "0"*(stop-len(as_str))
             return Binary(as_str[key][::-1])
         elif isinstance(key, int):
@@ -638,34 +653,106 @@ class Binary:
         else:
             return self
 
-    def __format(self, spec):
-        if not spec:
-            if self._len%8 == 0:
-                spec = "b"
-            elif self._len > 16:
-                spec = "w"
-            else:
-                spec = "s"
-            
-        if spec == "b":
-            return utility.format_binary(self._data, ' ')[-self._len-len(self._data):]
-        if spec == "s":
-            return utility.format_binary(self._data, '')[-self._len:]
+    RE_SPLIT_PATTERN = re.compile('(\d+|[\D]+)') 
+    def __find_pattern(self, pattern):
+        if hasattr(self, '_computed_pattern'):
+            return getattr(self, '_computed_pattern')
+        PATTERN = []
+        res = re.findall(self.RE_SPLIT_PATTERN, pattern)
+        it = iter(res)
+        try:
+            while True:
+                arg1 = int(next(it))
+                arg2 = next(it)
+                PATTERN.append((arg1, arg2))
+        except StopIteration:
+            pass
+        setattr(self, '_computed_pattern', PATTERN)
+        return PATTERN
+    def __to_string_with_radix(self, radix) -> str:
+        if radix == 'b':
+            return utility.format_binary(self._data, '')[-len(self):]
+        elif radix == 'x': 
+            return utility.format_hex(self._data, '')[-len(self)//4:]
+        return ''
+    def __add_padding(self, as_str, padding, radix):
+        if isinstance(padding, list):
+            if len(padding) == 0:
+                return as_str
+            as_str = as_str[::-1]
+            to_join = []
+            index = 0
+            pad_index = 0
+            while True:
+                to_join.append((as_str[index:index+padding[pad_index][0]], padding[pad_index][1]))
+                index += padding[pad_index][0]
+                pad_index = (pad_index+1)%(len(padding)+1)
+                if index >= len(as_str):
+                    break
+            out = ''
+            for val, join in reversed(to_join):
+                out += f"{join}{val[::-1]}"
+            return out.strip(''.join(i[1] for i in padding))
+        else:
+            if padding[0] == 0:
+                return as_str
+            width = padding[0]//{'b':1,'x':4}[radix]
+            wraped = [chunk[::-1] for chunk in wrap(as_str[::-1], width)[::-1]]
+            return padding[1].join(wraped)
+    def __format(self, spec: str): 
+        # {:pad:pattern} {:pad:n }
+        # {:%h} {:%b}
+        # {:r.}    
+        spec = spec.split(':')
+        it = iter(spec)
+        reverse = None
+        padding_filter = None
+        radix = None
 
-        jump = {"w":2, "d":4, "q":8}[spec]
-        chunks = list(reversed(np.array_split(self._data, len(self._data)//jump)))
+        try:
+            while True:
+                mod = next(it)
+                if len(mod) == 2 and mod.startswith('r'):
+                    reverse = mod[1]
+                elif mod == 'pad':
+                    arg = next(it)
+                    if (len(arg) == 1 or len(arg)==2) and arg[0] in ['s','n', 'b', 'w', 'd', 'q']:
+                        pad_chars = arg[1:] if arg[1:] != '' else ' ' 
+                        padding_filter = ({'s':0, 'n':4, 'b':8, 'w':16, 'd':32, 'q':64}[arg[0]], pad_chars)
+                    else:
+                        padding_filter = self.__find_pattern(arg)
+                elif len(mod)==2 and mod.startswith('%') and mod[1] in ['x', 'b']:
+                    radix = mod[1]
+        except StopIteration:
+            pass
         
-        return " ".join([(''.join((np.binary_repr(i, 8)) for i in reversed(chunk))) for chunk in chunks])
+        if padding_filter is None:
+            if self._len%8 == 0:
+                padding_filter = (8, ' ')
+            elif self._len > 16:
+                padding_filter = (8, ' ')
+            else:
+                padding_filter = (0, '')
+        if radix is None:
+            radix = 'b'
+        
+        as_str = self.__to_string_with_radix(radix)
+        as_str = self.__add_padding(as_str, padding_filter, radix)
+        if reverse is not None:
+            as_str = f"{reverse}{as_str[::-1]}"
+        return as_str
 
     def __format__(self, spec):
-        formatted = self.__format(spec)
-        if self._reversed_display:
-            if len(self._reversed_display) == 1:
-                return f'{self._reversed_display}{formatted[::-1]}'
-            else:
-                return formatted[::-1]
+        if spec is None:
+            return self.to_string()
+        if spec == '' and self._default_formatting is not None:
+            formatted = self.__format(self._default_formatting)
+        else:
+            formatted = self.__format(spec)
         return formatted
     def __repr__(self) -> str:
+        return format(self)
+    def __str__(self):
         return format(self)
 
 class u8(Binary):

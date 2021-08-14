@@ -61,7 +61,8 @@ def get_mask_union(mask_a: np.ndarray, mask_b: np.ndarray):
 
 def format_binary(_data: np.ndarray, to_join: str):
     return to_join.join(((np.binary_repr(i, 8)) for i in reversed(_data)))
-
+def format_hex(_data: np.ndarray, to_join:str):
+    return to_join.join("{0:0{1}x}".format(i,2) for i in reversed(_data))
 @nb.njit(cache=True, locals={'sum_of_values': nb.float64, 'increment':nb.float64})
 def to_float(_data: np.ndarray):
     sum_of_values = 0

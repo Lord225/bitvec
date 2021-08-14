@@ -4,7 +4,8 @@ import math
 
 def isInteger(_input: str):
     return "." not in _input
-
+def isFloatString(_input: str):
+    return "." in _input
 def fp(_input: str) -> float:
     if isInteger(_input):
         return float(int(_input, 2))
@@ -36,10 +37,12 @@ def normalalize_float(f: float):
     counter = 0
     if f < 0:
         f = -f 
-    while f < 1.0:
+    if f == 0:
+        return None, None
+    while f <= 1.0:
         counter -= 1
         f *= 2
-    while f > 2.0:
+    while f >= 2.0:
         counter += 1
         f /= 2
     return f, counter
@@ -93,6 +96,11 @@ class Splitted:
     def __str__(self) -> str:
         return f'SplitedFloat(whole={self.whole}, frac={self.frac}, sign={self.sign})'
 
+class FloatInstance:
+    def __init__(self, MANTISSA, EXPONANT, SIGN):
+        self.MANTISSA = MANTISSA
+        self.EXPONANT = EXPONANT
+        self.SIGN = SIGN
 
 class CustomFloat:
     PRESETS = {'fp8':(4, 3), 'fp16':(5, 10), 'fp32':(8, 23), 'bf16':(8, 7), 'tf':(8, 10), 'fp24':(7, 16), 'pxr24':(8, 15)}
@@ -111,8 +119,11 @@ class CustomFloat:
         assert self.MANTISA_SIZE is not None and self.MANTISA_SIZE > 0
         assert self.EXPONENTIAL_SIZE is not None and self.EXPONENTIAL_SIZE > 0
         assert self.EXPONENT_BIAS is not None and self.EXPONENT_BIAS < 0
+
+        if self.MANTISA_SIZE > 54:
+            print("WARNING: Mantissa with size over 54 could will not be properly emulated")
     def __call__(self, *args, **kwds):
-        pass
+        return self.get(*args, **kwds)
     def get_parts(self, object: object):
         as_float = to_float(object)
         
@@ -120,7 +131,10 @@ class CustomFloat:
         as_float = abs(as_float)
 
         normalized, count = normalalize_float(as_float)
-        if count < -2**(self.EXPONENTIAL_SIZE-1):
+        if normalized is None or count is None:
+            biased_count = 0
+            normalized = 0
+        elif count < -2**(self.EXPONENTIAL_SIZE-1):
             normalized, biased_count = normalize_float_but_allow_for_denormalized(as_float, -(self.EXPONENT_BIAS+1))
         else:
             biased_count = count-self.EXPONENT_BIAS
@@ -136,21 +150,40 @@ class CustomFloat:
         sign, manissa, exp = self.get_parts(object)
         total_size = len(self)
         
-        output = Binary(bit_lenght=total_size)
+        output = Binary(bit_lenght=total_size, default_formatting=f'pad:{self.MANTISA_SIZE} {self.EXPONENTIAL_SIZE} 1 ')
         output[-1] = sign
         output[-self.EXPONENTIAL_SIZE-1:-1] = exp
         output[:-self.EXPONENTIAL_SIZE-1] = manissa
 
         return output
-    def get(self, object: object):
-        if isinstance(object, str):
-            try:
-                x = int(object, 16)
-                if len(Binary(object)) == len(self):
-                    return self.get_float(object)
-            except:
-                pass
-        return self.get_hex(object)
+    def get(self, *args, **kwds):
+        if len(args) == 1:
+            if isinstance(args[0], str):
+                try:
+                    as_bin = Binary(args[0], bit_lenght=len(self))
+                    return self.get_float(as_bin)
+                except:
+                    pass
+            if isinstance(args[0], (float, int)):
+                return self.get_concat(float(args[0]))
+            if isinstance(args[0], Binary):
+                if len(args[0]) == len(self):
+                    return self.get_float(args[0])
+                else:
+                    raise ValueError(f"Expectet {len(self)} bit value")
+        if len(args) == 2 or len(args) == 3:
+            mantissa = Binary(args[0], bit_lenght=self.MANTISA_SIZE)
+            exponant = Binary(args[1], bit_lenght=self.EXPONENTIAL_SIZE)
+            sign = False if len(args) != 3 else bool(args[2])
+
+        if 'mantissa' in kwds and 'exponent' in kwds:
+            mantissa = Binary(kwds['mantissa'], bit_lenght=self.MANTISA_SIZE)
+            exponant = Binary(kwds['exponent'], bit_lenght=self.EXPONENTIAL_SIZE)
+            sign = False if 'sign' not in kwds else bool(kwds['sign'])
+
+            value =  self.get_float_from_parts(mantissa, exponant, sign)
+            return value
+        return None
     def get_hex(self, object: object):
         num = self.get_concat(object)
         return "{0:#0{1}x}".format(int(num), math.ceil(len(self)/4)+2)
@@ -160,18 +193,23 @@ class CustomFloat:
         return num[-self.EXPONENTIAL_SIZE-1:-1]
     def get_sign(self, num: Binary):
         return num[-1]
-    def get_float(self, input:str):
-        x = Binary(input, bit_lenght=len(self))
-        mantissa = self.get_mantissa(x)
-        exponent = self.get_exponent(x)
-        sign = self.get_sign(x)
 
+    def get_float_from_parts(self, mantissa, exponent, sign):
         mantissa_as_float = mantissa_to_float(mantissa, exponent==0)
         if exponent == 0:
             exponent = 1.0
         mantissa_as_float = mantissa_as_float*2**(float(exponent)+self.EXPONENT_BIAS)
 
         mantissa_as_float = -mantissa_as_float if sign else mantissa_as_float
+        return mantissa_as_float
+    def get_float(self, input:str):
+        x = Binary(input, bit_lenght=len(self))
+
+        mantissa = self.get_mantissa(x)
+        exponent = self.get_exponent(x)
+        sign = self.get_sign(x)
+
+        mantissa_as_float = self.get_float_from_parts(mantissa, exponent, sign)
 
         return mantissa_as_float
 
