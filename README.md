@@ -17,17 +17,24 @@ print(x, len(x)) # prints '0110 4'
 
 y = Binary(1, bit_lenght=9) # You can specify any len you want.
 
-# Support for operations
-print(int(~(x+y))) # prints 504 (~000000111)
+# prints 504 (~000000111)
+print(int(~(x+y))) 
 
-# Arithmetic correctly wraps and you can check the status 
-print(ops.overflowing_add(x, '1100')) # overflowing_add return the wrapped sum and boolen to indicate if overflow occurs
+# Arithmetic correctly wraps and you can check the status
+# overflowing_add return the wrapped sum and boolen to indicate if overflow occurs
+print(ops.overflowing_add(x, '1100')) 
 
-x[0] = True  # Set first bit to high
-print(x[:3]) # prints first 3 bits
+# Set first bit to high
+x[0] = True 
 
-x[:3] = "010" # sets first 3 bits to '010'
-print(x) # '0010'
+# prints first 3 bits
+print(x[:3]) 
+
+# sets first 3 bits to '010'
+x[:3] = "010" 
+
+# '0010'
+print(x) 
 ```
 
 This module contains some tools to work with float point numbers
@@ -37,13 +44,23 @@ from pybytes import *
 
 f = floats.CustomFloat(preset='fp16') # Create 16 bit float point https://en.wikipedia.org/wiki/Half-precision_floating-point_format
 
-print(f(0.25)) # Convert python float to binary value
-print(f('0x3c00')) # prints 1.0
-print(f(2.0).as_hex()) # prints 2.0 representation in hex
-print(f(mantissa='11 0000 0000', exponent=15)) # 1.11_2 * 2**(15-15) = 1.75
+# Convert python float to binary value
+print(f(0.25)) 
+
+ # prints 1.0
+print(f('0x3c00'))
+
+# prints 2.0 representation in hex
+print(f(2.0).as_hex())
+
+# 1.11_2 * 2**(15-15) = 1.75
+print(f(mantissa='11 0000 0000', exponent=15)) 
 
 f2 = floats.CustomFloat(mantissa_size=3, exponent_size=3)
 
-print(f2(f2(4.256))) # 4.256 is wraped to 4.0 becouse it is impossible to express with this float.
-print(len(f2)) # len in bits of this float (3+3+1 = 7 bits)
+# 4.256 is wraped to 4.0 becouse it is impossible to express with this float.
+print(f2(f2(4.256)))
+
+# len in bits of this float (3+3+1 = 7 bits)
+print(len(f2)) 
 ```
