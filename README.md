@@ -5,15 +5,15 @@ It aims to:
 * Simpler to manipulate bits than with native python ints
 * Correctly wrap numbers in arithmetic operations
 * Emulate behavior of unsigned, signed and sign-module 
-* Not to be pathetically slow (builded with numpy and numba)
+* Not to be pathetically slow (builded with numpy and numba, but some interloop with C++/rust is not excluded.)
 
 Example use:
 ```py
 from pybytes import *
 
-# creating new number, size is inferred from leading zeros
+# Creating new number. Size is inferred from leading zeros
 x = Binary('0110')
-print(x, len(x)) # prints '0110 4'
+print(f"{x}, lenght: {len(x}") # prints '0110, lenght: 4'
 
 y = Binary(1, bit_lenght=9) # You can specify any len you want.
 
@@ -47,7 +47,7 @@ f = floats.CustomFloat(preset='fp16') # Create 16 bit float point https://en.wik
 # Convert python float to binary value
 print(f(0.25)) 
 
- # prints 1.0
+# prints 1.0
 print(f('0x3c00'))
 
 # prints 2.0 representation in hex
