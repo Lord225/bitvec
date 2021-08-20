@@ -157,6 +157,13 @@ class CustomFloat:
 
         return output
     def get(self, *args, **kwds):
+        if 'rounding' in kwds:
+            # Smaller
+            # Bigger
+            # Closest
+            rounding = kwds['rounding']
+        else:
+            rounding = 'Closest'
         if len(args) == 1:
             if isinstance(args[0], str):
                 try:
