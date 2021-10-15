@@ -22,6 +22,11 @@ class Flags:
         return bool(self.pf)
     def __repr__(self) -> str:
         return f"Flags(of={self.isOverflow()},zf={self.isZero()},sf={self.isSign()},pf={self.isPartity()})"
+    def __eq__(self, o: object) -> bool:
+        if isinstance(o, Flags):
+            return self.of == o.of and self.pf == o.pf and self.zf == o.zf and self.sf == o.sf
+        else:
+            return False
 
 
 def wrapping_add(rsh: binary_class.Binary, lsh: object) -> binary_class.Binary:
@@ -37,8 +42,9 @@ def flaged_add(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Bina
         raise ValueError()
     new_mask = utils.get_mask_union(rsh._mask, lsh._mask)
     new_len = max(rsh._len, lsh._len)
-    out_data, of, zf, sf, pf = alu_base.add_arrays(rsh._data, lsh._data,new_mask, carry=0)
-    return binary_class.Binary(out_data, bit_lenght=new_len, sign_behavior=lsh._sign_behavior), Flags(of, zf, sf, pf)
+    out_data, of, zf, pf = alu_base.add_arrays(rsh._data, lsh._data,new_mask, carry=0)
+    output = binary_class.Binary(out_data, bit_lenght=new_len, sign_behavior=lsh._sign_behavior)
+    return output, Flags(of, zf, output[-1], pf)
 
 def wrapping_sub(rsh: binary_class.Binary, lsh: object) -> binary_class.Binary:
     out, _ = overflowing_sub(rsh, lsh)
@@ -56,9 +62,10 @@ def flaged_sub(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Bina
     if lsh._sign_behavior != rsh._sign_behavior:
         raise ValueError()
 
-    out_data, of, zf, sf, pf = alu_base.sub_arrays(rsh._data, lsh._data, rsh._len, lsh._len, new_mask, rsh._sign_behavior)
+    out_data, of, zf, pf = alu_base.sub_arrays(rsh._data, lsh._data, rsh._len, lsh._len, new_mask, rsh._sign_behavior)
+    output = binary_class.Binary(out_data, bit_lenght=new_len, sign_behavior=lsh._sign_behavior) 
     
-    return binary_class.Binary(out_data, bit_lenght=new_len, sign_behavior=lsh._sign_behavior), Flags(of, zf, sf, pf)
+    return output, Flags(of, zf, output[-1], pf)
 
 def flaged_mul(rsh: binary_class.Binary, lsh: object)-> Tuple[binary_class.Binary, Flags]:
     if not isinstance(lsh, binary_class.Binary):

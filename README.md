@@ -7,6 +7,11 @@ It aims to:
 * Emulate behavior of unsigned, signed and sign-module 
 * Not to be pathetically slow (builded with numpy and numba, but some interloop with C++/rust is not excluded.)
 
+# Unittests
+```
+python -m unittest src\pybytes\tests\binary_test.py
+```
+
 Example use:
 ```py
 from pybytes import *

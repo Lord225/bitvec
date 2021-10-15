@@ -1,7 +1,9 @@
 import sys, os
+
+from pybytes.common.aritmetic import Flags
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 import unittest 
-from pybytes import Binary
+from pybytes import *
 import numpy as np
 
 
@@ -319,5 +321,24 @@ class LeadingTrailling(unittest.TestCase):
     def test_leading_ones(self):
         pass
 
+class Operations(unittest.TestCase):
+    def test_add(self):
+        self.assertEqual(Binary("0000 0001")+Binary("0000 0001"), Binary("0000 0010"))
+        self.assertEqual(Binary("0001")+Binary("0001"), Binary("0010"))
+        self.assertEqual(Binary("1")+Binary("1"), Binary("0"))
+        self.assertEqual(ops.overflowing_add(Binary("1"), Binary("1")), (Binary("0"), True))
+        self.assertEqual(Binary("1 0000 0000")+Binary("0000 0001"), Binary("1 0000 0001"))
+        self.assertEqual(Binary("00 1000 0000")+Binary("1000 0000"), Binary("01 0000 0000"))
+        self.assertEqual(Binary("01 1000 0000")+Binary("1000 0000"), Binary("10 0000 0000"))
+        self.assertEqual(Binary("11 0000 0000")+1, Binary("11 0000 0001"))
+    def test_sub(self):
+        self.assertEqual(Binary("0000 0001")-Binary("0000 0001"), Binary("0000 0000"))
+        self.assertEqual(Binary("0000 0000")-Binary("0000 0001"), Binary("1111 1111"))
+        self.assertEqual(Binary("0000 0001")-Binary("0000 0000"), Binary("0000 0001"))
+        self.assertEqual(Binary("0 0000 0000")-Binary("0000 0001"), Binary("1 1111 1111"))
+        self.assertEqual(Binary("1 0000 0000")-Binary("0000 0001"), Binary("0 1111 1111"))
+        out, flags = ops.flaged_sub(Binary("0 0000 0000"), Binary("0 0000 0001"))
+        self.assertEqual((out, list(flags)), (Binary("1 1111 1111"), list(Flags(False, False, True, True))))
+        
 if __name__ == '__main__':
     unittest.main()

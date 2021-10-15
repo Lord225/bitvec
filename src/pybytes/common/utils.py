@@ -54,7 +54,7 @@ def apply_mask(to_mask: np.ndarray, values: np.ndarray):
 def apply_mask_checked(to_mask: np.ndarray, values: np.ndarray):
     x = to_mask&(~values)
     to_mask = apply_mask(to_mask, values)
-    return to_mask, (x!=0).any()
+    return to_mask, (x!=0).any(), (to_mask==0).all()
 @nb.njit(cache=True)
 def get_mask_union(mask_a: np.ndarray, mask_b: np.ndarray):
     return mask_a|mask_b

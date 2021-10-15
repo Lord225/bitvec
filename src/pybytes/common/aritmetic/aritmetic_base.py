@@ -22,9 +22,11 @@ def add_arrays(rsh: np.ndarray, lsh: np.ndarray, mask: np.ndarray, carry: int = 
         overflow = 1 if byte_sum > 255 else 0
         zero = False if out[i] != 0 else zero
     
-    out, overflow = utils.apply_mask_checked(out, mask)
-
-    return out, bool(overflow), zero, not (out[-1]&128 != 0),out[0]&1==1
+    out, of_masks, zf_mask = utils.apply_mask_checked(out, mask)
+    overflow |= of_masks
+    zero |= zf_mask
+    
+    return out, bool(overflow), zero, out[0]&1==1
 @nb.njit(cache=True)
 def sub_arrays(rsh: np.ndarray, lsh: np.ndarray, rsh_len: int, lsh_len: int, mask: np.ndarray, sign_behavior: str) -> Tuple[np.ndarray, bool, bool, bool, bool]:
     arg1, arg2 = utils.pad_to_same_size(rsh, lsh)
@@ -35,13 +37,13 @@ def sub_arrays(rsh: np.ndarray, lsh: np.ndarray, rsh_len: int, lsh_len: int, mas
 
     arg2 = bitwise_neg_array(arg2, mask)
 
-    output, of, zf, sf, pf = add_arrays(arg1, arg2, mask, 1)
+    output, of, zf, pf = add_arrays(arg1, arg2, mask, 1)
     
     if sign_behavior == "magnitude":
         output = to_magnitude(output, len_max, mask, "signed", False, True)
     if sign_behavior == "unsigned":
         output = to_unsigned(output, len_max, mask, "signed", False, True)
-    return output, of, zf, sf, pf
+    return output, of, zf, pf
 
 @nb.njit(cache=True)
 def arithmeitc_neg_number(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_behavior: str) -> np.ndarray:
@@ -67,11 +69,11 @@ def bitwise_neg_array(rsh: np.ndarray, mask: np.ndarray):
 
 @nb.njit(cache=True)
 def decrement_array(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_behavior: str):
-    output, _, _, _, _ = add_arrays(value, np.full(len(value), 255, dtype=np.uint8), mask, 0)
+    output, _, _, _ = add_arrays(value, np.full(len(value), 255, dtype=np.uint8), mask, 0)
     return output
 @nb.njit(cache=True)
 def increment_array(value: np.ndarray, num_lenght: int, mask: np.ndarray, sign_behavior: str):
-    output, _, _, _, _ = add_arrays(value, np.zeros(len(value), dtype=np.uint8), mask, 1)
+    output, _, _, _ = add_arrays(value, np.zeros(len(value), dtype=np.uint8), mask, 1)
     return output
 
 @nb.njit(cache=True)
