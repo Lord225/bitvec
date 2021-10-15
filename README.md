@@ -1,5 +1,8 @@
 # PyBytes
-
+Quick Start
+```
+pip install git+https://github.com/Lord225/PyBytes.git
+```
 Tools written in python for quick bit manipulation on arbitrary sized number. 
 It aims to:
 * Simpler to manipulate bits than with native python ints

@@ -19,4 +19,9 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=PACKAGES,
     python_requires=">=3.9",
+    install_requires=[
+        "xxhash>=2.0.2",
+        "numpy>=1.20.3",
+        "numba>=0.54.0"
+    ]
 )

@@ -1,6 +1,12 @@
 from pybytes.binary_class import Binary
 import pybytes
 import math
+from enum import Enum
+
+class rounding_mode(Enum):
+    CLOSEST = 0,
+    LESS = 1,
+    MORE = 2,
 
 def isInteger(_input: str):
     return "." not in _input
@@ -15,7 +21,7 @@ def fp(_input: str) -> float:
         RealNum = int(Real, 2) if len(Real) != 0 else 0
 
         return IntNum+RealNum/(2**len(Real))
-def float_to_binary(frac: float, output_size_limit = 200):
+def float_to_binary(frac: float, output_size_limit = 200, rounding: rounding_mode = rounding_mode.CLOSEST):
     if frac > 1 or frac < 0:
         raise ValueError(f'Parameter frac should be in range [0, 1)')
     out_frac = Binary(bit_lenght=output_size_limit)
@@ -39,6 +45,7 @@ def normalalize_float(f: float):
         f = -f 
     if f == 0:
         return None, None
+    
     while f <= 1.0:
         counter -= 1
         f *= 2
@@ -158,9 +165,6 @@ class CustomFloat:
         return output
     def get(self, *args, **kwds):
         if 'rounding' in kwds:
-            # Smaller
-            # Bigger
-            # Closest
             rounding = kwds['rounding']
         else:
             rounding = 'Closest'
