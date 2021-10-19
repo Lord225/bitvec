@@ -9,7 +9,7 @@ print(f'Found: {PACKAGES}')
 
 setuptools.setup(
     name="pybytes-Lord225",
-    version="0.0.4",
+    version="0.0.5",
     author="Lord225",
     author_email="zlotymaciej@gmail.com",
     description="Tools for working with binary numbers",
@@ -21,7 +21,7 @@ setuptools.setup(
     python_requires=">=3.9",
     install_requires=[
         "xxhash>=2.0.2",
-        "numpy>=1.20.3",
+        "numpy>=1.19.0",
         "numba>=0.54.0"
     ]
 )

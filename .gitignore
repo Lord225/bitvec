@@ -1,4 +1,5 @@
 __pycache__
 src/main.py
-dist
-pybytes_Lord225.egg-info
+dist/
+*.egg-info
+build/
