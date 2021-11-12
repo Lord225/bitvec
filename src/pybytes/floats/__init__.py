@@ -62,7 +62,7 @@ def to_float(object: object):
     elif isinstance(object, float):
         as_float = object
     else:
-        as_float = float(object)
+        raise
     return as_float
 def split_to_fixed(object: object, binary_places = 200, target_decimal_precision=None):
     as_float = to_float(object)
@@ -97,9 +97,9 @@ class BinaryFixedPoint:
         pass
 class Splitted:
     def __init__(self, frac, whole, sign) -> None:
-        self.frac = frac
-        self.whole = whole
-        self.sign = sign
+        self.frac = Binary(frac)
+        self.whole = Binary(whole)
+        self.sign = bool(sign)
     def __str__(self) -> str:
         return f'SplitedFloat(whole={self.whole}, frac={self.frac}, sign={self.sign})'
 
@@ -116,9 +116,13 @@ class CustomFloat:
             if preset in self.PRESETS:
                 exponent_size = self.PRESETS[preset][0]
                 mantissa_size = self.PRESETS[preset][1]
-        self.MANTISA_SIZE = mantissa_size
-        self.EXPONENTIAL_SIZE = exponent_size
-        self.EXPONENT_BIAS = -abs(exponent_bias) if exponent_bias is not None else -(2**(exponent_size-1)-1)
+
+        assert mantissa_size != None
+        assert exponent_size != None
+
+        self.MANTISA_SIZE: int = mantissa_size
+        self.EXPONENTIAL_SIZE:int = exponent_size
+        self.EXPONENT_BIAS: int = -abs(exponent_bias) if exponent_bias is not None else -(2**(exponent_size-1)-1)
 
         self.__selfcheck()
     
@@ -132,6 +136,8 @@ class CustomFloat:
     def __call__(self, *args, **kwds):
         return self.get(*args, **kwds)
     def get_parts(self, object: object):
+        self.__selfcheck()
+
         as_float = to_float(object)
         
         sign = as_float < 0
@@ -213,7 +219,7 @@ class CustomFloat:
 
         mantissa_as_float = -mantissa_as_float if sign else mantissa_as_float
         return mantissa_as_float
-    def get_float(self, input:str):
+    def get_float(self, input):
         x = Binary(input, bit_lenght=len(self))
 
         mantissa = self.get_mantissa(x)

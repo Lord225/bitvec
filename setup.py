@@ -9,7 +9,7 @@ print(f'Found: {PACKAGES}')
 
 setuptools.setup(
     name="pybytes-Lord225",
-    version="0.0.5",
+    version="0.0.6",
     author="Lord225",
     author_email="zlotymaciej@gmail.com",
     description="Tools for working with binary numbers",

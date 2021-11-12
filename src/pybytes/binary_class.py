@@ -1,14 +1,14 @@
-from typing import Iterable, List, Literal, Union, Tuple, NewType
+from typing import Iterable, Literal, Union
 import numpy as np
-from numpy.lib.arraypad import pad
 import xxhash
 from pybytes.common import utility
 import pybytes.common as common
 import re
 from textwrap import wrap
+import types
 
 class Binary:
-    def __init__(self, object: object = None, bit_lenght: int=None, bytes_lenght:int = None, sign_behavior: Literal["unsigned", "magnitude", "signed"] = None, signed: bool=None,  default_formatting:str = None):
+    def __init__(self, object: object = None, bit_lenght: int=None, bytes_lenght:int = None, sign_behavior: Union[Literal["unsigned", "magnitude", "signed"], str] = None, signed: bool=None,  default_formatting:str = None):
         """## Binary
         Class that represent numbers in binary. Wraps arithmetic to bouds of the binary number, 
         allows for quick and easy bit manipulation.
@@ -155,46 +155,48 @@ class Binary:
         ## See also
 
         """
+        
+        to_build = types.SimpleNamespace()
+        
         if signed == True:
-            sign_behavior = 'signed'
-        self._sign_behavior = sign_behavior
-        self._default_formatting = default_formatting
+            to_build.sign_behavior = 'signed'
 
+        to_build._len = None
         if bytes_lenght is not None and bit_lenght is not None and bytes_lenght!=bit_lenght*8:
             raise ValueError(f"Passed conflicting sizes")
         if bytes_lenght is None and bit_lenght is not None:
-            self._len = bit_lenght
+            to_build._len = bit_lenght
         if bytes_lenght is not None and bit_lenght is None:
-            self._len = 8*bytes_lenght
-        if bytes_lenght is None and bit_lenght is None:
-            self._len = None
-
+            to_build._len = 8*bytes_lenght
+        
         if object is None:
-            if self._len is None:
-                self._len = 1
-            self._data = np.zeros((len(self)),dtype=np.uint8)
+            if to_build._len is None:
+                to_build._len = 1
+            to_build._data = np.zeros(((to_build._len//8) + 1), dtype=np.uint8)
 
+        self.__build_class(_sign_behavior = to_build.sign_behavior)
 
         from_str = False
         if isinstance(object, str):
             object, new_len = self.__generate_from_string(object)
             from_str = True
-            self._len = new_len if self._len is None and new_len is not None else self._len
-
+            to_build._len = new_len if to_build._len is None and new_len is not None else to_build._len
         if isinstance(object, int):
-            self.__from_integer(object, do_not_add_sign_bit=from_str)
+            self.__from_integer(to_build, object, do_not_add_sign_bit=from_str)
         elif isinstance(object, np.ndarray):
-            self.__from_ndarray(object)
+            self.__from_ndarray(to_build, object)
         elif isinstance(object, Iterable):
-           self.__from_iterable(object)
+            self.__from_iterable(to_build, object)
         elif isinstance(object, Binary):
             self.__copy(object)
         elif isinstance(object, float):
-            self.__from_float(object)
+            self.__from_float(to_build, object)
         elif isinstance(object, bool):
-            self.__from_integer(object!=0)
-        self._sign_behavior = self._sign_behavior if self._sign_behavior is not None else "unsigned"
+            self.__from_integer(to_build, object!=0, False)
+
+        to_build._sign_behavior = to_build._sign_behavior if to_build._sign_behavior is not None else "unsigned"
         
+        self.__build_class(_len = to_build._len, _data=to_build._data, _sign_behavior=to_build._sign_behavior, _default_formatting=to_build._default_formatting)
         self.__fix_zero_lenght()
         self.__strip_array_to_lenght()
         self.__generate_bitmask()
@@ -205,30 +207,31 @@ class Binary:
     #     Constructors    #
     #######################
     def __copy(self, to_copy):
-        self._len = to_copy._len if self._len is None else self._len
-        self._data = to_copy._data.copy()
+        _len = to_copy._len if self._len is None else self._len
+        _data = to_copy._data.copy()
+        self.__build_class(_len=_len, _data=_data)
         self.__generate_bitmask()
         if self._sign_behavior != None and to_copy._sign_behavior != self._sign_behavior:
             self._data = common.alu.alu_base.sign_convert[to_copy._sign_behavior](self._data, self._len, self._mask, self._sign_behavior, False)
-    def __from_iterable(self, iterable):
+    def __from_iterable(self, to_build, iterable):
         bits = self.__generate_from_iterable(iterable)
-        self._len = len(bits) if self._len is None else self._len 
-        self._data = np.packbits(list(reversed(bits)), bitorder='little')
-    def __from_ndarray(self, array):
+        to_build._len = len(bits) if to_build._len is None else to_build._len 
+        to_build._data = np.array(np.packbits(list(reversed(bits)), bitorder='little'))
+    def __from_ndarray(self, to_build, array):
         object = array.astype('uint8')
-        self._data = object
-        self._len = len(self._data)*8 if self._len is None else self._len
-    def __from_integer(self, obj, do_not_add_sign_bit):
+        to_build._data = object
+        to_build._len = len(to_build._data)*8 if to_build._len is None else to_build._len
+    def __from_integer(self, to_build, obj, do_not_add_sign_bit):
         if obj == 0:
-            self._len = 1 if self._len is None else self._len
-            self._data = np.zeros((1,), dtype=np.uint8)
+            to_build._len = 1 if to_build._len is None else to_build._len
+            to_build._data = np.zeros((1,), dtype=np.uint8)
         elif obj > 0:
-            self.__from_number(obj, do_not_add_sign_bit)
+            self.__from_number(to_build, obj, do_not_add_sign_bit)
         else:
-            self.__from_negative_integer(obj)
-    def __from_negative_integer(self, val: int):
+            self.__from_negative_integer(to_build, obj)
+    def __from_negative_integer(self, to_build, val: int):
         if self._sign_behavior == None:
-            self._sign_behavior = 'signed'
+            self._sign_behavior = "signed"
         elif self._sign_behavior == "unsigned":
             raise ValueError()
         
@@ -236,31 +239,35 @@ class Binary:
 
         self._len = i.bit_length()+1 if self._len is None else self._len
 
+        self.__build_class(_len = to_build._len)
+
         if val > self.maximum_value():
             raise ValueError(f"Number {val} is too big for {self.sign_behavior()} lenght: {len(self)}")
         if val < self.minimum_value():
             raise ValueError(f"Number {val} is too big for {self.sign_behavior()} lenght: {len(self)}")
 
-        buffer = i.to_bytes(utility.bytes_for_len(self._len), "little")
-        self._data = np.frombuffer(buffer, dtype=np.uint8)
+        buffer = i.to_bytes(utility.bytes_for_len(len(self)), "little")
+        to_build._data = np.frombuffer(buffer, dtype=np.uint8)
         
         self.__generate_bitmask() # early bitmask generation.
         negate = common.alu.arithmetic_neg(self)
         self.__copy(negate)
-    def __from_number(self, i: int, do_not_add_sign_bit: bool):
+    def __from_number(self, to_build, i: int, do_not_add_sign_bit: bool):
         assert i > 0
-        self._len = i.bit_length() + (1 if self._sign_behavior in ['signed', 'magnitude'] and not do_not_add_sign_bit else 0) if self._len is None else self._len
+        to_build._len = i.bit_length() + (1 if to_build._sign_behavior in ['signed', 'magnitude'] and not do_not_add_sign_bit else 0) if to_build._len is None else to_build._len
+        
+        self.__build_class(_len = to_build._len)
         
         if i > self.maximum_value() and not do_not_add_sign_bit:
             raise ValueError(f"Number {i} is too big for lenght: {len(self)}")
 
         buffer = i.to_bytes(utility.bytes_for_len(self._len), "little")
-        self._data = np.frombuffer(buffer, dtype=np.uint8)
-    def __from_float(self, i: float):
+        to_build._data = np.frombuffer(buffer, dtype=np.uint8)
+    def __from_float(self, to_build, i: float):
         if round(i) != i:
             raise ValueError("Cannot convert from none-integer value, try using float module.")
         else:
-            self.__from_integer(int(i), False)
+            self.__from_integer(to_build, int(i), False)
     def __generate_from_iterable(self, Iter: Iterable):
         return [bool(i) for i in Iter]
     def __generate_from_string(self, my_str: str):
@@ -287,21 +294,35 @@ class Binary:
         return number, len_override
     
     def __generate_bitmask(self):
-        self._mask = np.packbits([1]*self._len, bitorder='little')
+        assert isinstance(self._len, int)
+        _mask = np.array(np.packbits([1]*self._len, bitorder='little'))
+        self.__build_class(_mask = _mask)
     def __fix_zero_lenght(self):
         if self._len == 0:
             self._len = 1
-    def __strip_array_to_lenght(self,):
+    def __strip_array_to_lenght(self):
+        assert isinstance(self._len, int)
         target_bytes = utility.bytes_for_len(self._len)
         lenght = len(self._data)
         if target_bytes < lenght:
             self._data = self._data[:target_bytes]
         elif target_bytes > lenght:
-            self._data = np.append(self._data, [np.uint8(0)]*(target_bytes-lenght))
+            self._data = np.array(np.append(self._data, [np.uint8(0)]*(target_bytes-lenght)))
+    def __build_class(self, **kwargs):
+        if "_len" in kwargs:
+            self._len: int = kwargs["_len"]
+        if "_data" in kwargs:
+            self._data: np.ndarray = kwargs["_data"]
+        if "_mask" in kwargs:
+            self._mask: np.ndarray = kwargs["_mask"]
+        if "_sign_behavior" in kwargs:
+            self._sign_behavior: Literal["unsigned", "magnitude", "signed"] = kwargs["_sign_behavior"]
+        if "_default_formatting" in kwargs:
+            self._default_formatting: str = kwargs["_default_formatting"]
     def __selfcheck(self):
-        REQUIRED_ATTRIBUTES = [("_data", np.ndarray), ("_len", int), ("_mask", np.ndarray), ("_sign_behavior", str)]
-
-        assert all((hasattr(self, ATTR) and isinstance(getattr(self, ATTR), TYPE) for ATTR, TYPE in REQUIRED_ATTRIBUTES)), "Missing internal components of Binary object."
+        assert hasattr(self, "_data") and isinstance(self._data, np.ndarray), "Missing component: _data"
+        assert hasattr(self, "_len") and isinstance(self._len, int), "Missing component: _len"
+        assert hasattr(self, "_mask") and isinstance(self._mask, np.ndarray), "Missing component: _mask"
         assert len(self._data) == common.utility.bytes_for_len(self._len), "Internal components of Binary object are invalid."
         assert self._len != 0, "Zero len Binary number is invalid"
         assert self._mask[-1] >= self._data[-1], "Data is invalid"
@@ -354,14 +375,24 @@ class Binary:
         if isinstance(which, int):
             return Binary(int(self._data[which]), bit_lenght=8)
         return None
-    def sign_behavior(self):
+    def sign_behavior(self) -> Literal["unsigned", "magnitude", "signed"]:
         """Returns sign behavior of the number. Possible values are:
         * unsigned
         * signed
         * magnitude
         Default sign behavior is `unsigned`. If sign is needed `signed` is used insted.
         """
-        return "unsigned" if self._sign_behavior is None else self._sign_behavior
+        if self._sign_behavior is None:
+            return "unsigned"
+        else:
+            if self._sign_behavior == "unsigned":
+                return "unsigned"
+            elif self._sign_behavior == "signed":
+                return "signed"
+            elif self._sign_behavior == "magnitude":
+                return "magnitude"
+            else:
+                raise
     def maximum_value(self):
         """Maximal value of this number
         >>> Binary('0000').maximum_value()
@@ -403,7 +434,7 @@ class Binary:
         >>> Binary("0000 1000").strip()
         "1000"
         """
-        return Binary(int(self), sign_behavior=self._sign_behavior, reversed_display=self._reversed_display)
+        return Binary(int(self), sign_behavior=self.sign_behavior())
     def strip_right(self):
         """Removes trailing zeros
         
@@ -423,7 +454,7 @@ class Binary:
         >>> Binary("0000 0000").trailing_zeros()
         8
         """
-        return utility.trailing_zeros(self._data, self._len)
+        return utility.trailing_zeros(self._data, len(self))
     def leading_zeros(self) -> int:
         """Returns amount of leading zeros
         
@@ -434,7 +465,7 @@ class Binary:
         >>> Binary("0000 0000").leading_zeros()
         8
         """
-        return utility.leading_zeros(self._data, self._len)
+        return utility.leading_zeros(self._data, len(self))
     def trailing_ones(self) -> int:
         """ NOT IMPLEMENTED
         Returns amount of trailing ones 
@@ -446,7 +477,7 @@ class Binary:
         >>> Binary("1111 1111").trailing_ones()
         8
         """
-        return utility.trailing_ones(self._data, self._len)
+        return utility.trailing_ones(self._data, len(self))
     def leading_ones(self) -> int:
         """
         Returns amount of leading ones 
@@ -458,7 +489,8 @@ class Binary:
         >>> Binary("1111 1111").leading_ones()
         8
         """
-        return utility.leading_ones(self._data, self._len)
+        raise NotImplementedError()
+        return utility.leading_ones(self._data, len(self))
 
     #####################
     #     Comparing     #
@@ -482,10 +514,10 @@ class Binary:
     #####################
 
     def __bool__(self):
-        return False if (self._data==0).all() else True
+        return False if np.all(self._data==0) else True
     def __hash__(self):
         h = xxhash.xxh64()
-        h.update(self._data)
+        h.update(np.array(self._data))
         return h.intdigest()
     def __int__(self):
         if self._sign_behavior == "unsigned":
@@ -495,7 +527,7 @@ class Binary:
             sign_bit = self.is_negative()
             data_cpy = self._data.copy()
             if sign_bit:
-                data_cpy = common.alu.alu_base.arithmeitc_neg_number(data_cpy, self._len, self._mask, self._sign_behavior)
+                data_cpy = common.alu.alu_base.arithmeitc_neg_number(data_cpy, len(self), self._mask, self.sign_behavior())
         value = int.from_bytes(data_cpy.data, 'little')
         if sign_bit:
             return -value
@@ -653,7 +685,7 @@ class Binary:
         else:
             return self
 
-    RE_SPLIT_PATTERN = re.compile('(\d+|[\D]+)') 
+    RE_SPLIT_PATTERN = re.compile('(\\d+|[\\D]+)') 
     def __find_pattern(self, pattern):
         if hasattr(self, '_computed_pattern'):
             return getattr(self, '_computed_pattern')
@@ -703,8 +735,8 @@ class Binary:
         # {:pad:pattern} {:pad:n }
         # {:%h} {:%b}
         # {:r.}    
-        spec = spec.split(':')
-        it = iter(spec)
+        spec_list = spec.split(':')
+        it = iter(spec_list)
         reverse = None
         padding_filter = None
         radix = None
@@ -760,4 +792,4 @@ class u8(Binary):
         super(u8, self).__init__(object, bit_lenght=8, sign_behavior='unsigned')
 class u16(Binary):
     def __init__(self, object: object = None):
-        super(u8, self).__init__(object, bit_lenght=16, sign_behavior='unsigned')
+        super(u16, self).__init__(object, bit_lenght=16, sign_behavior='unsigned')
