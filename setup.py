@@ -5,11 +5,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 PACKAGES = setuptools.find_packages(where="src")
 
+# python setup.py bdist_egg
+# python setup.py bdist_wininst
+
 print(f'Found: {PACKAGES}')
 
 setuptools.setup(
     name="pybytes-Lord225",
-    version="0.0.6",
+    version="0.0.8",
     author="Lord225",
     author_email="zlotymaciej@gmail.com",
     description="Tools for working with binary numbers",

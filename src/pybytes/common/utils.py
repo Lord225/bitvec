@@ -42,7 +42,7 @@ def set_bit(to_mask: np.ndarray, idx: int, lenght: int, value: bool):
     byte_index = idx//8
     bit_index = idx%8
     mask = 255 if value else 0
-    to_mask[byte_index] ^= (mask ^ to_mask[byte_index]) & (1 << bit_index);
+    to_mask[byte_index] ^= (mask ^ to_mask[byte_index]) & (1 << bit_index)
 @nb.njit(cache=True)
 def set_bits(to_mask: np.ndarray, to_set: np.ndarray, offset: int, lenght: int, size_of_array: int):
     for i in range(lenght):

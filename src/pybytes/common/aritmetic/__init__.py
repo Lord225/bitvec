@@ -67,14 +67,16 @@ def flaged_sub(rsh: binary_class.Binary, lsh: object) -> Tuple[binary_class.Bina
     
     return output, Flags(of, zf, output[-1], pf)
 
-def flaged_mul(rsh: binary_class.Binary, lsh: object)-> Tuple[binary_class.Binary, Flags]:
+def flaged_mul(rsh: binary_class.Binary, lsh: object)-> Tuple[binary_class.Binary, binary_class.Binary]:
     if not isinstance(lsh, binary_class.Binary):
         lsh = binary_class.Binary(lsh, bit_lenght=len(rsh), sign_behavior=rsh._sign_behavior)
 
     rsh_as_int = int(rsh)
     lsh_as_int = int(lsh)
 
-    output = (rsh_as_int*lsh_as_int)%rsh.maximum_value()
+    mul = binary_class.Binary(rsh_as_int*lsh_as_int)
+
+    return binary_class.Binary(mul[:len(rsh)]), binary_class.Binary(mul[len(rsh):])
     
 
 def bitwise_not(tar: binary_class.Binary):

@@ -3,7 +3,7 @@ import numba as nb
 import pybytes.common.utils as utils
 
 @nb.njit(cache=True)
-def greater_compare_arrays(a: np.array, b: np.array) -> bool:
+def greater_compare_arrays(a: np.ndarray, b: np.ndarray) -> bool:
     arg1, arg2 = utils.pad_to_same_size(a, b)    
 
     for i in range(len(arg1)-1, -1, -1):
@@ -19,7 +19,7 @@ def greater_compare_arrays(a: np.array, b: np.array) -> bool:
     return False
 
 @nb.njit(cache=True)
-def less_compare_arrays(a: np.array, b: np.array) -> bool:
+def less_compare_arrays(a: np.ndarray, b: np.ndarray) -> bool:
     arg1, arg2 = utils.pad_to_same_size(a, b)   
 
     for i in range(len(arg1)-1, -1, -1):
@@ -35,7 +35,7 @@ def less_compare_arrays(a: np.array, b: np.array) -> bool:
     return False
 
 @nb.njit(cache=True)
-def equal_compare_arrays(a: np.array, b: np.array) -> bool:
+def equal_compare_arrays(a: np.ndarray, b: np.ndarray) -> bool:
     arg1, arg2 = utils.pad_to_same_size(a, b)   
 
     # from low bytes to hi bytes

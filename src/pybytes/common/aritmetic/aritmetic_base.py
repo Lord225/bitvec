@@ -4,7 +4,7 @@ import numba as nb
 import pybytes.common.utils as utils
 
 @nb.njit(cache=True)
-def add_arrays(rsh: np.ndarray, lsh: np.ndarray, mask: np.ndarray, carry: int = 0) -> Tuple[np.ndarray, bool, bool, bool, bool]:
+def add_arrays(rsh: np.ndarray, lsh: np.ndarray, mask: np.ndarray, carry: int = 0) -> Tuple[np.ndarray, bool, bool, bool]:
     arg1, arg2 = utils.pad_to_same_size(rsh, lsh)   
     out = np.zeros((len(arg1)), dtype=np.uint8)
     
@@ -13,10 +13,10 @@ def add_arrays(rsh: np.ndarray, lsh: np.ndarray, mask: np.ndarray, carry: int = 
     
     # from low bytes to hi bytes
     for i in range(len(arg1)):
-        a = arg1[i]
-        b = arg2[i]
+        a: np.uint8 = arg1[i]
+        b: np.uint8 = arg2[i]
         
-        byte_sum = nb.types.int32(a) + nb.types.int32(b)+overflow
+        byte_sum = nb.types.int32(a) + nb.types.int32(b) + overflow
         out[i] = byte_sum & 255
         
         overflow = 1 if byte_sum > 255 else 0
@@ -28,7 +28,7 @@ def add_arrays(rsh: np.ndarray, lsh: np.ndarray, mask: np.ndarray, carry: int = 
     
     return out, bool(overflow), zero, out[0]&1==1
 @nb.njit(cache=True)
-def sub_arrays(rsh: np.ndarray, lsh: np.ndarray, rsh_len: int, lsh_len: int, mask: np.ndarray, sign_behavior: str) -> Tuple[np.ndarray, bool, bool, bool, bool]:
+def sub_arrays(rsh: np.ndarray, lsh: np.ndarray, rsh_len: int, lsh_len: int, mask: np.ndarray, sign_behavior: str) -> Tuple[np.ndarray, bool, bool, bool]:
     arg1, arg2 = utils.pad_to_same_size(rsh, lsh)
     len_max = max(rsh_len, lsh_len)
 

@@ -1,7 +1,6 @@
 import sys, os
-
-from pybytes.common.aritmetic import Flags
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+from pybytes.common.aritmetic import Flags
 import unittest 
 from pybytes import *
 import numpy as np
@@ -279,11 +278,11 @@ class TestAssigns(unittest.TestCase):
         self.assertEqual(str(x), "10101011")
     def test_illegal_assigns(self):
         x = Binary("10000010")
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             x[0:1] = "1111 1111"
-        with self.assertRaises(Exception):
+        with self.assertRaises(IndexError):
             x[0:100] = "11" 
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             x[-100:1] = "1111 1111"
    
 class LeadingTrailling(unittest.TestCase):

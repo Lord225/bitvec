@@ -21,7 +21,7 @@ def fp(_input: str) -> float:
         RealNum = int(Real, 2) if len(Real) != 0 else 0
 
         return IntNum+RealNum/(2**len(Real))
-def float_to_binary(frac: float, output_size_limit = 200, rounding: rounding_mode = rounding_mode.CLOSEST):
+def float_to_binary(frac: float, output_size_limit = 20, rounding: rounding_mode = rounding_mode.CLOSEST):
     if frac > 1 or frac < 0:
         raise ValueError(f'Parameter frac should be in range [0, 1)')
     out_frac = Binary(bit_lenght=output_size_limit)
@@ -30,7 +30,7 @@ def float_to_binary(frac: float, output_size_limit = 200, rounding: rounding_mod
         frac = frac*2
         out_frac[-i-1] = frac >= 1.0
         frac, _ = math.modf(frac)
-        if frac == 0:
+        if abs(frac) < 0.0000000000000001:
             break
     return out_frac.strip_right()
 def int_to_binary(input):
@@ -64,7 +64,7 @@ def to_float(object: object):
     else:
         raise
     return as_float
-def split_to_fixed(object: object, binary_places = 200, target_decimal_precision=None):
+def split_to_fixed(object: object, binary_places = 20, target_decimal_precision=None):
     as_float = to_float(object)
 
     if target_decimal_precision is not None:
@@ -73,7 +73,7 @@ def split_to_fixed(object: object, binary_places = 200, target_decimal_precision
     
     frac, whole = math.modf(as_float)
 
-    out_whole = int_to_binary(whole)
+    out_whole = int_to_binary(int(whole))
 
     out_frac = float_to_binary(frac, binary_places)
     
@@ -153,7 +153,7 @@ class CustomFloat:
             biased_count = count-self.EXPONENT_BIAS
 
         manissa = Binary(bit_lenght=self.MANTISA_SIZE)
-        splitted = split_to_fixed(normalized)
+        splitted = split_to_fixed(normalized, self.MANTISA_SIZE+2)
         manissa[-len(splitted.frac):] = splitted.frac
 
         return Binary(sign), manissa, Binary(biased_count, self.EXPONENTIAL_SIZE)
