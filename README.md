@@ -8,7 +8,6 @@ It aims to:
 * Simpler to manipulate bits than with native python ints
 * Correctly wrap numbers in arithmetic operations
 * Emulate behavior of unsigned, signed and sign-module 
-* Not to be pathetically slow (builded with numpy and numba, but some interloop with C++/rust is not excluded.)
 
 # Unittests
 ```
