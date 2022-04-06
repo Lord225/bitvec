@@ -1,9 +1,10 @@
-import sys, os
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-from pybytes.common.aritmetic import Flags
 import unittest 
-from pybytes import *
+import sys, os
 import numpy as np
+
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+from pybytes import *
+from pybytes.common.aritmetic import *
 
 
 class TestConstruct(unittest.TestCase):
@@ -338,6 +339,37 @@ class Operations(unittest.TestCase):
         self.assertEqual(Binary("1 0000 0000")-Binary("0000 0001"), Binary("0 1111 1111"))
         out, flags = ops.flaged_sub(Binary("0 0000 0000"), Binary("0 0000 0001"))
         self.assertEqual((out, list(flags)), (Binary("1 1111 1111"), list(Flags(False, False, True, True))))
+    def test_mul(self):
+        TESTE_CASES = [0, 1, 2, 3, 255]
+        SIZES = [8, 16]
+
+        for test_x in TESTE_CASES:
+            for test_y in TESTE_CASES:
+                for size in SIZES:
+                    x = Binary(test_x, bit_lenght=size)
+                    y = Binary(test_y, bit_lenght=size)
+
+                    product = x*y
+                    expected = (test_x*test_y) % 2**size
+
+                    self.assertEqual(int(product), expected)
+    def test_mul_signed(self):
+        TESTE_CASES = [0, 1, 2, 3, 255, 256, -1, -2]
+        SIZES = [10,11,12,13,14,15,16]
+
+        for size in SIZES:
+            for test_x in TESTE_CASES:
+                for test_y in TESTE_CASES:
+                        x = Binary(test_x, bit_lenght=size, signed=True)
+                        y = Binary(test_y, bit_lenght=size, signed=True)
+
+                        product = x*y
+                        expected = (test_x*test_y) % 2**size
+
+                        self.assertEqual(int(product), expected, f"{x} * {y} = {product}")
+
+
+
         
 if __name__ == '__main__':
     unittest.main()

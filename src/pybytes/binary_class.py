@@ -163,6 +163,7 @@ class Binary:
                           sign_behavior = 'signed' if signed else 'unsigned',
                           signed=None,
                           default_formatting=default_formatting)
+            return
 
         self._default_formatting = str(default_formatting)
 
@@ -173,7 +174,7 @@ class Binary:
         to_build._sign_behavior = sign_behavior
 
         if bytes_lenght is not None and bit_lenght is not None and bytes_lenght!=bit_lenght*8:
-            raise ValueError(f"Passed conflicting sizes")
+            raise ValueError(f"Passed conflicting sizes ({bytes_lenght} bytes and {bit_lenght} bits)")
         if bytes_lenght is None and bit_lenght is not None:
             to_build._len = bit_lenght
         if bytes_lenght is not None and bit_lenght is None:
@@ -181,9 +182,7 @@ class Binary:
         
 
         if object is None:
-            if to_build._len is None:
-                to_build._len = 1
-            to_build._data = np.zeros(((to_build._len//8) + 1), dtype=np.uint8)
+            object = 0
 
         from_str = False
         if isinstance(object, str):
@@ -251,9 +250,12 @@ class Binary:
 
         if to_build._len == 0:
             to_build._data = np.zeros((max(to_build._len, 1),), dtype=np.uint8)
-        if obj > self.maximum_value():
-            raise ValueError(f"Number {obj} is too big for lenght: {len(self)}")
         
+        minimum = self.minimum_value()
+        maximum = self.maximum_value()
+        if obj > maximum or obj < minimum:
+            if do_not_add_sign_bit == False or obj > 2**len(self):
+                raise ValueError(f"Number {obj} cannot fit in lenght: {len(self)}")
         buffer = abs(obj).to_bytes(utility.bytes_for_len(self._len), "little")
         to_build._data = np.frombuffer(buffer, dtype=np.uint8)
 
@@ -397,7 +399,7 @@ class Binary:
             elif self._sign_behavior == "magnitude":
                 return "magnitude"
             else:
-                raise
+                raise RuntimeError(f"This object is poisoned. {self._sign_behavior} is not valid state")
     def maximum_value(self):
         """Maximal value of this number
         >>> Binary('0000').maximum_value()
@@ -586,7 +588,7 @@ class Binary:
         elif isinstance(key, int):
             key = len(self) + key if key < 0 else key
             if key >= len(self) or key < 0:
-                raise IndexError("Value out of bounds")
+                raise IndexError("Key out of bounds")
             byte_index = key//8
             return utility.get_bit(self._data[byte_index], key%8)
         else:
@@ -660,6 +662,9 @@ class Binary:
     def __sub__(self, other):
         return common.alu.wrapping_sub(self, other)
     
+    def __mul__(self, other):
+        return common.alu.wrapping_mul(self, other)
+    
 
     #####################
     #      bitwise      #
@@ -713,6 +718,7 @@ class Binary:
             return utility.format_hex(self._data, '')[-len(self)//4:]
         return ''
     def __add_padding(self, as_str, padding, radix):
+        #TODO REFACTOR
         if isinstance(padding, list):
             if len(padding) == 0:
                 return as_str
@@ -736,8 +742,9 @@ class Binary:
             width = padding[0]//{'b':1,'x':4}[radix]
             wraped = [chunk[::-1] for chunk in wrap(as_str[::-1], width)[::-1]]
             return padding[1].join(wraped)
-    def __format(self, spec: str): 
-        # {:pad:pattern} {:pad:n }
+    def __format(self, spec: str):
+        #TODO REFACTOR
+        # {:pad:pattern} {:pad:n}
         # {:%h} {:%b}
         # {:r.}    
         spec_list = spec.split(':')
@@ -792,9 +799,3 @@ class Binary:
     def __str__(self):
         return format(self)
 
-class u8(Binary):
-    def __init__(self, object: object = None):
-        super(u8, self).__init__(object, bit_lenght=8, sign_behavior='unsigned')
-class u16(Binary):
-    def __init__(self, object: object = None):
-        super(u16, self).__init__(object, bit_lenght=16, sign_behavior='unsigned')
