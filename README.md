@@ -4,10 +4,11 @@ Quick Start
 pip install git+https://github.com/Lord225/PyBytes.git
 ```
 Tools written in python for quick bit manipulation on arbitrary sized number. 
-It aims to:
+It is:
 * Simpler to manipulate bits than with native python ints
-* Correctly wrap numbers in arithmetic operations
-* Emulate behavior of unsigned, signed and sign-module 
+* Able to correctly wrap numbers in arithmetic operations
+* Emulate behavior of unsigned, signed integers
+* Written in Rust
 
 # Unittests
 ```
