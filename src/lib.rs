@@ -309,6 +309,33 @@ impl Binary
         self.slice(&types::PySliceIndices::new(byte_index * 8, (byte_index + 1) * 8, 1))
     }
 
+    pub fn append(&mut self, obj: &PyAny) -> PyResult<()> {
+
+        if let Ok(bin) = obj.extract::<PyRef<Binary>>() { 
+            self.inner.append_slice(&bin.inner.data);
+        } else if let Ok(bin) = obj.extract::<bool>() { 
+            self.inner.append_bit(bin);
+        } else if let Ok( bin) = Self::from(obj, None, Some(self.sign_behavior())) {
+            self.inner.append_slice(&bin.inner.data);
+        } else {
+            return Err(exceptions::PyTypeError::new_err(format!("Unsupported type: {}", obj)));
+        }
+        Ok(())
+    }
+    pub fn prepend(&mut self, obj: &PyAny) -> PyResult<()> {
+
+        if let Ok(bin) = obj.extract::<PyRef<Binary>>() { 
+            self.inner.prepend_slice(&bin.inner.data);
+        } else if let Ok(bin) = obj.extract::<bool>() { 
+            self.inner.prepend_slice(&bv::BitVec::<u32>::new_fill(bin, 1));
+        } else if let Ok( bin) = Self::from(obj, None, Some(self.sign_behavior())) {
+            self.inner.prepend_slice(&bin.inner.data);
+        } else {
+            return Err(exceptions::PyTypeError::new_err(format!("Unsupported type: {}", obj)));
+        }
+        Ok(())
+    }
+
     pub fn hex(&self) -> String {
         self.inner.to_string_hex(true)
     }

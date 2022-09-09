@@ -202,7 +202,7 @@ class Binary:
     def append(self, value: bool|int|str|Binary):
         """
         ## append
-        appends value to the end of the number
+        appends value to the end of the number. Append is generally lot faster then prepend.
         >>> Binary('0101').append('111')
         '1110101' 
         """

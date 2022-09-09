@@ -20,8 +20,6 @@ def flaged_add(a: Binary, b: Any) -> Tuple[Binary, Flags]:
     ```
     """
     ...
-
-
 def overflowing_add(a: Binary, b: Any) -> Tuple[Binary, bool]:
     """
     ## overflowing_add
@@ -32,7 +30,6 @@ def overflowing_add(a: Binary, b: Any) -> Tuple[Binary, bool]:
     ('00000000', True)
     """
     ...
-
 def wrapping_add(a: Binary, b: Any) -> Binary:
     """
     ## wrapping_add
@@ -46,6 +43,7 @@ def wrapping_add(a: Binary, b: Any) -> Binary:
     ```
     """
     ...
+
 def flaged_sub(a: Binary, b: Any) -> Tuple[Binary, Flags]:
     """
     ## flaged_add
@@ -70,7 +68,6 @@ def overflowing_sub(a: Binary, b: Any) -> Tuple[Binary, bool]:
     ('11111111', True)
     """
     ...
-
 def wrapping_sub(a: Binary, b: Any) -> Binary:
     """
     ## overflowing_sub
@@ -101,7 +98,6 @@ def cast(binary: Binary, to_type: str) -> Binary:
 
     """
     ...
-
 def convert(binary: Binary, to_type: str) -> Binary:
     """
     ## convert
@@ -260,6 +256,7 @@ def bitwise_xor(binary: Binary) -> Binary:
     ```
     """
     ...
+
 def overflowing_lsh(a: Binary, b: Any) -> Tuple[Binary, Binary]:
     """
     ## overflowing_lsh
@@ -339,3 +336,23 @@ def arithmetic_underflowing_rsh(a: Binary, b: Any) -> Tuple[Binary, Binary]:
     ```
     """
     ...
+def arithmetic_wrapping_rsh(a: Binary, b: Any) -> Binary:
+    """
+    ## arithmetic_wrapping_rsh
+    Arithmetic right shift binary number by given amount of bits. Returns only shifted value (discards overflow)
+    Bits from left are filled with sign bit if number is signed, otherwise with zeros.
+    ```
+    >>> arithmetic_wrapping_rsh(i8('0100 1010'), 0)
+    '01001010'
+    >>> arithmetic_wrapping_rsh(i8('0100 1010'), 1)
+    '00100101'
+    >>> arithmetic_wrapping_rsh(i8('0100 1010'), 2)
+    '00010010'
+    >>> arithmetic_wrapping_rsh(i8('1100 1010'), 0)
+    '11001010'
+    >>> arithmetic_wrapping_rsh(i8('1100 1010'), 1)
+    '11100101'
+    >>> arithmetic_wrapping_rsh(i8('1100 1010'), 2)
+    '11110010'
+    ```
+    """

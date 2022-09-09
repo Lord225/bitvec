@@ -558,6 +558,25 @@ impl BinaryBase
     pub fn len_usize(&self) -> usize {
         return self.data.bit_len().try_into().unwrap();
     }
+    pub fn append_bit(&mut self, val: bool) 
+    {
+        self.data.push_bit(val);
+    }
+    pub fn append_slice(&mut self, val: &bv::BitVec<u32>) 
+    {
+        // 0.3181476593017578s
+        //self.data = self.data.bit_concat(val).to_bit_vec();
+        
+        // 0.005983591079711914s
+        for i in 0..val.bit_len()
+        {
+            self.data.push_bit(val.get_bit(i));
+        }
+    }
+    pub fn prepend_slice(&mut self, val: &bv::BitVec<u32>) 
+    {
+        self.data = val.bit_concat(&self.data).to_bit_vec();
+    }
 }
 
 impl From<&BinaryBase> for i64 {
