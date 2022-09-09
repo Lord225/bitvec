@@ -406,7 +406,15 @@ impl BinaryBase {
     {
         let bit_size = bit_size.unwrap_or(object.len()?*8);
         let sign_behavior = sign_behavior.unwrap_or("unsigned");
-        let mut binary = Self { data: bv::BitVec::<u32>::with_capacity(bit_size.try_into().unwrap()), sign_behavior: sign_behavior.to_string() };
+        let mut data = bv::BitVec::<u32>::with_capacity(bit_size.try_into().unwrap());
+
+        for byte in object.as_bytes().iter() {
+            for bit in 0..8 {
+                data.push((byte >> bit) & 1 == 1); // Mask bit & push to bitvec
+            }
+        }
+
+        let mut binary = Self { data: data, sign_behavior: sign_behavior.to_string() };
         
         binary.resize_constrained(bit_size)?;
         

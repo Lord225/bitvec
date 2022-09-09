@@ -130,13 +130,13 @@ impl Binary
         if let Ok(object) = object.extract::<PyRef<Binary>>() {
             return Self::wrap(binary::BinaryBase::parse_bitvec_from_copy(object.unwrap(), bit_size, sign_behavior));
         }
-        // from iterable
-        if let Ok(object) = object.iter() {
-            return Self::wrap(binary::BinaryBase::parse_bitvec_from_iterable(object, bit_size, sign_behavior));
-        }
         // from bytes
         if let Ok(object) = object.extract::<&types::PyBytes>() {
             return Self::wrap(binary::BinaryBase::parse_bitvec_from_bytes(&object, bit_size, sign_behavior));
+        }
+        // from iterable
+        if let Ok(object) = object.iter() {
+            return Self::wrap(binary::BinaryBase::parse_bitvec_from_iterable(object, bit_size, sign_behavior));
         }
         // from float
         if let Ok(object) = object.extract::<f64>() {
