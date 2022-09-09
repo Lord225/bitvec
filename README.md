@@ -24,7 +24,7 @@ from pybytes import arithm
 x = Binary('0110')
 print(f"{x}, lenght: {len(x}") # prints '0110, lenght: 4'
 
-y = Binary(1, lenght=9) # You can specify any len you want.
+y = Binary(1, lenght=9) # You can specify len too
 
 # prints 504 (~000000111)
 print(int(~(x+y))) 
