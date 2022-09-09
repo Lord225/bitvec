@@ -18,7 +18,7 @@ python -m unittest src\pybytes\tests\binary_test.py
 Example use:
 ```py
 from pybytes import Binary
-from pybytes import arithm as ops
+from pybytes import arithm
 
 # Creating new number. Size is inferred from leading zeros
 x = Binary('0110')
@@ -31,7 +31,7 @@ print(int(~(x+y)))
 
 # Arithmetic correctly wraps and you can check the status
 # overflowing_add return the wrapped sum and boolen to indicate if overflow occurs
-print(ops.overflowing_add(x, '1100')) 
+print(arithm.overflowing_add(x, '1100')) 
 
 # Set first bit to high
 x[0] = True 
