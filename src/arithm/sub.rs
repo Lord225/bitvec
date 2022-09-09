@@ -10,7 +10,7 @@ use super::utility::cast_base;
 fn base_sub_binary(a: &BinaryBase, b: &BinaryBase) -> PyResult<(BinaryBase, Flags)> 
 {
     let a_signed = cast_base(a, "signed");
-    let b_signed = bitwise_base::bitwise_neg(&cast_base(b, "signed"));
+    let b_signed = bitwise_base::bitwise_not(&cast_base(b, "signed"));
     
     add_binary(&a_signed, Some(&b_signed), true)
 }

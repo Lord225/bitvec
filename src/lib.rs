@@ -354,15 +354,7 @@ impl Binary
     pub fn __sub__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
         arithm::sub::wrapping_sub(_self, other)
     }
-    pub fn __or__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
-        arithm::bitwise::bitwise_or(_self, other)
-    }
-    pub fn __xor__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
-        arithm::bitwise::bitwise_xor(_self, other)
-    }
-    pub fn __and__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
-        arithm::bitwise::bitwise_and(_self, other)
-    }
+
     pub fn __neg__(_self: PyRef<'_, Self>) -> PyResult<PyObject>{
         arithm::add::arithmetic_neg(_self)
     }

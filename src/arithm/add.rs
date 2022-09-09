@@ -49,7 +49,7 @@ pub mod add_base {
 
     pub fn arithmetic_neg(a: &BinaryBase) -> PyResult<BinaryBase> 
     {
-        let negated = bitwise_base::bitwise_neg(a);
+        let negated = bitwise_base::bitwise_not(a);
         
         let (output, _) = add_binary(&negated, None, true)?;
 

@@ -1,4 +1,4 @@
-from .pybytes import Binary, BinaryIterator, arithm
+from .pybytes import Binary, BinaryIterator, arithm # type: ignore
 from . import alias
 
 __doc__ = pybytes.__doc__ # type: ignore

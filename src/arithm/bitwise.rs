@@ -24,7 +24,7 @@ macro_rules! gen_bitwise_all {
 
         #[pyfunction]
         pub fn bitwise_not(a: PyRef<crate::Binary>) -> PyResult<PyObject> {
-            crate::Binary::wrap_object(Ok(bitwise_base::bitwise_neg(&a.inner)))
+            crate::Binary::wrap_object(Ok(bitwise_base::bitwise_not(&a.inner)))
         }
 
         $(
