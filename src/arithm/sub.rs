@@ -5,12 +5,13 @@ use crate::binary::BinaryBase;
 use super::add::add_base::add_binary;
 use super::bitwise::bitwise_base;
 use super::flags::*;
-use super::utility::cast_base;
+use super::utility::pad;
 
 fn base_sub_binary(a: &BinaryBase, b: &BinaryBase) -> PyResult<(BinaryBase, Flags)> 
 {
-    let a_signed = cast_base(a, "signed");
-    let b_signed = bitwise_base::bitwise_not(&cast_base(b, "signed"));
+    let len = Ord::max(a.len(), b.len());
+    let a_signed = pad(a, len.try_into().unwrap(), a.sign_extending_bit());
+    let b_signed = bitwise_base::bitwise_not(&pad(b, len.try_into().unwrap(), b.sign_extending_bit()));
     
     add_binary(&a_signed, Some(&b_signed), true)
 }
