@@ -44,8 +44,6 @@ pub fn flaged_sub(binary: PyRef<crate::Binary>, other: &PyAny) -> PyResult<(PyOb
     })
 }
 
-
-
 #[pyfunction]
 pub fn overflowing_sub(binary: PyRef<crate::Binary>, other: &PyAny) -> PyResult<(PyObject, PyObject)> {
     Python::with_gil(|py| {

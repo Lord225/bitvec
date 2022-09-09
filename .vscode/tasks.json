@@ -9,6 +9,11 @@
             "label": "marutin-build-release",
             "command": "conda activate pybytes-dev && maturin develop --release",
             "type": "shell"
+        },
+        {
+            "label": "release",
+            "command": "conda activate pybytes-dev && maturin develop --release && python -m unittest python\\tests\\tests.py && maturin build -f --release",
+            "type": "shell"
         }
     ]
 }

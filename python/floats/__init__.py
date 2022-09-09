@@ -1,7 +1,9 @@
-# from pybytes import Binary
-# import pybytes
-# import math
-# from enum import Enum
+from pybytes import Binary
+import pybytes
+import math
+from enum import Enum
+
+# REWRITE THIS MESS
 
 # class rounding_mode(Enum):
 #     CLOSEST = 0,
