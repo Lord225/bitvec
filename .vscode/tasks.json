@@ -1,0 +1,14 @@
+{
+    "version": "2.0.0",
+    "tasks": [{
+        "label": "marutin-build",
+        "command": "conda activate pybytes-dev && maturin develop",
+        "type": "shell"
+        },
+        {
+            "label": "marutin-build-release",
+            "command": "conda activate pybytes-dev && maturin develop --release",
+            "type": "shell"
+        }
+    ]
+}

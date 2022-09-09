@@ -1,0 +1,15 @@
+{
+    "python.defaultInterpreterPath": "C:\\Users\\Maciek\\anaconda3\\envs\\pybytes-dev\\python.exe",
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./python",
+        "-p",
+        "*_test.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true,
+    "python.analysis.extraPaths": [
+        "~/.local/virtual-site-packages",
+    ],
+}
