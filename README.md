@@ -17,7 +17,8 @@ python -m unittest src\pybytes\tests\binary_test.py
 
 Example use:
 ```py
-from pybytes import *
+from pybytes import Binary
+from pybytes import arithm as ops
 
 # Creating new number. Size is inferred from leading zeros
 x = Binary('0110')
