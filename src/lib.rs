@@ -153,17 +153,9 @@ impl Binary
         return Self::wrap_object(binary::BinaryBase::parse_bitvec_from_slice(slice, None, None));
     }
     #[allow(unused)]
-    fn from_parts(data: bv::BitVec::<u32>, sign: String) -> PyResult<Self>
+    fn from_parts(data: bv::BitVec::<u32>, sign: String) -> Self
     {
-        Self::wrap(Ok(binary::BinaryBase {data, sign_behavior: sign}))
-    }
-}
-
-impl Into<PyObject> for Binary
-{
-    fn into(self) -> PyObject
-    {
-        Python::with_gil(|py| self.into_py(py))
+        Self::wrap(Ok(binary::BinaryBase {data, sign_behavior: sign})).unwrap()
     }
 }
 
@@ -343,9 +335,9 @@ impl Binary
         self.inner.to_string_bin(true)
     }
     pub fn int(&self) -> PyResult<PyObject> {
-        let python_int: PyObject = Python::with_gil(|py| 0.into_py(py));
-
         Python::with_gil(|py| {
+            let python_int: PyObject = 0.into_py(py);
+            
             python_int.call_method(py, "from_bytes", (self._data(), "little"), Some(vec![("signed", self.sign_behavior() == "signed")].into_py_dict(py)))
         }) // from_bytes(self._data, "big", {"signed": self.sign_behavior() == "signed"})
     }
@@ -506,10 +498,14 @@ impl Binary
         }   
 
         return Err(exceptions::PyTypeError::new_err(format!("Invalid index type {}", index)));
-    }
-    
+    }   
 }
 
+impl From<Binary> for PyObject {
+    fn from(binary: Binary) -> PyObject {
+        Binary::wrap_object(Ok(binary.inner)).unwrap()
+    }
+}
 
 impl BinaryIterator {
     pub fn new(binary: Py<Binary>, chunk_size: isize) -> PyResult<Self> 

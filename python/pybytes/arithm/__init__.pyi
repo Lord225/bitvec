@@ -222,7 +222,7 @@ def bitwise_not(binary: Binary) -> Binary:
     """
     ...
 
-def bitwise_or(binary: Binary) -> Binary:
+def bitwise_or(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_or
     Bitwise OR of binary numbers
@@ -232,7 +232,7 @@ def bitwise_or(binary: Binary) -> Binary:
     ```
     """
     ...
-def bitwise_and(binary: Binary) -> Binary:
+def bitwise_and(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_and
     Bitwise AND of binary numbers
@@ -244,7 +244,7 @@ def bitwise_and(binary: Binary) -> Binary:
     ```
     """
     ...
-def bitwise_xor(binary: Binary) -> Binary:
+def bitwise_xor(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_xor
     Bitwise XOR of binary numbers
@@ -253,6 +253,79 @@ def bitwise_xor(binary: Binary) -> Binary:
     '00000011'
     >>> bitwise_xor(u8(1), u8(1))
     '00000000'
+    ```
+    """
+    ...
+def bitwise_xnor(binary: Binary, b: Any) -> Binary:
+    """
+    ## bitwise_xnor
+    Bitwise XNOR of binary numbers
+    ```
+    >>> bitwise_xnor(u8(1), u8(2))
+    '11111100'
+    >>> bitwise_xnor(u8(1), u8(1))
+    '11111111'
+    ```
+    """
+    ...
+def bitwise_nand(binary: Binary, b: Any) -> Binary:
+    """
+    ## bitwise_nand
+    Bitwise NAND of binary numbers
+    ```
+    >>> bitwise_nand(u8(1), u8(2))
+    '11111111'
+    >>> bitwise_nand(u8(1), u8(1))
+    '11111110'
+    ```
+    """
+    ...
+def bitwise_nor(binary: Binary, b: Any) -> Binary:
+    """
+    ## bitwise_noreset
+    Bitwise NOR of binary numbers
+    ```
+    >>> bitwise_nor(u8(1), u8(2))
+    '11111100'
+    >>> bitwise_nor(u8(1), u8(1))
+    '11111110'
+    ```
+    """
+    ...
+
+def multiply(binary: Binary, b: Any) -> Binary:
+    """
+    ## full_mul
+    Performs multiplication of binary numbers
+    ```
+    >>> full_mul(u8(1), u8(2))
+    '00000010'
+    >>> full_mul(u8(1), u8(1))
+    '00000001'
+    ```
+    """
+    ...
+def overflowing_mul(binary: Binary, b: Any) -> Tuple[Binary, Binary]:
+    """
+    ## overflowing_mul
+    Performs multiplication of binary numbers and returns tuple of result and overflow
+    ```
+    >>> overflowing_mul(u8(1), u8(2))
+    ('00000010', '00000000')
+    >>> overflowing_mul(u8(1), u8(1))
+    ('00000001', '00000000')
+    ```
+    """
+    ...
+def wrapping_mul(binary: Binary, b: Any) -> Binary:
+    """
+    ## wrapping_mul
+    Performs multiplication of binary numbers and returns result modulo 2^n
+    ```
+    >>> wrapping_mul(u8(1), u8(2))
+    '00000010'
+    >>> wrapping_mul(u8(1), u8(1))
+    '00000001'
     ```
     """
     ...

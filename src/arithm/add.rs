@@ -32,6 +32,7 @@ pub mod add_base {
             let b_block = if bi < b_data.block_len() { b_data.get_block(bi) } else { 0 };
 
             let (sum, cout) = u32::carrying_add(a_block, b_block, carry);
+                       
             carry = cout;
             
             result.push_block(sum);

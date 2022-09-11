@@ -414,6 +414,7 @@ impl BinaryBase {
             }
         }
 
+        
         let mut binary = Self { data: data, sign_behavior: sign_behavior.to_string() };
         
         binary.resize_constrained(bit_size)?;
