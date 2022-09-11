@@ -213,6 +213,9 @@ class TestConversions(unittest.TestCase):
         value = Binary(0)
         self.assertEqual(value.bin(), "0b0")
 
+        value = Binary(0, lenght=0)
+        self.assertEqual(value.bin(), "0b")
+
         value = Binary(1)
         self.assertEqual(value.bin(), "0b1")
 
@@ -237,6 +240,37 @@ class TestConversions(unittest.TestCase):
 
         value = Binary(1, byte_lenght=2)
         self.assertEqual(value.bin(), "0b0000000000000001")
+
+        value = Binary(0)
+        self.assertEqual(value.bin(prefix=False), "0")
+        value = Binary(0)
+        self.assertEqual(value.bin(False), "0")
+
+class AliasTest(unittest.TestCase):
+    def test_base(self):
+        OBJ_TO_TEST = ['1111', 15, b'\x0F', '0xf']
+
+        for size in range(4, 32):
+            for obj in OBJ_TO_TEST:
+                val = alias.unsigned_bin(obj, size)
+
+                self.assertEqual(val.len, size)
+                self.assertEqual(val.sign_behavior(), 'unsigned')
+                self.assertEqual(val.int(), 15)
+    def test_uN(self):
+        uN = [(alias.u2, 2), (alias.u3, 3), (alias.u4, 4), (alias.u5, 5), (alias.u6, 6), (alias.u7, 7), (alias.u8, 8), (alias.u16, 16), (alias.u32, 32)]
+
+        for (func, size) in uN:
+            self.assertEqual(func(1), Binary(1, lenght=size, sign_behavior='unsigned'))
+
+    def test_iN(self):
+        iN = [(alias.i2, 2), (alias.i3, 3), (alias.i4, 4), (alias.i5, 5), (alias.i6, 6), (alias.i7, 7), (alias.i8, 8), (alias.i16, 16), (alias.i32, 32)]
+
+        for val in [0, 1, -1]:
+            for (func, size) in iN:
+                as_bin: Binary = func(val)
+                self.assertEqual(as_bin, Binary(val, lenght=size, sign_behavior='signed'))
+                self.assertEqual(as_bin.int(), val)
 
 class TestAssigns(unittest.TestCase):    
     def test_assign_int_key(self):
@@ -303,6 +337,98 @@ class TestAssigns(unittest.TestCase):
             x[0:1] = "1111 1111"
         with self.assertRaises(Exception):
             x[-100:1] = "1111 1111"
+    def test_slice(self):
+        from pybytes.alias import u4, i4
+        a, b = u4('1101'), i4('1101')
+
+        self.assertEqual(str(a[0:0]), '')
+        self.assertEqual(str(a[0:1]), '1')
+        self.assertEqual(str(a[0:2]), '01')
+        self.assertEqual(str(a[0:3]), '101')
+        self.assertEqual(str(a[0:4]), '1101')
+        self.assertEqual(str(a[0:5]), '01101')
+        self.assertEqual(str(a[0:6]), '001101')
+        self.assertEqual(str(a[0:7]), '0001101')
+
+        self.assertEqual(str(a[1:1]), '')
+        self.assertEqual(str(a[1:2]), '0')
+        self.assertEqual(str(a[1:3]), '10')
+        self.assertEqual(str(a[1:4]), '110')
+        self.assertEqual(str(a[1:5]), '0110')
+        self.assertEqual(str(a[1:6]), '00110')
+        self.assertEqual(str(a[1:7]), '000110')
+
+        self.assertEqual(str(a[2:2]), '')
+        self.assertEqual(str(a[2:3]), '1')
+        self.assertEqual(str(a[2:4]), '11')
+        self.assertEqual(str(a[2:5]), '011')
+        self.assertEqual(str(a[2:6]), '0011')
+        self.assertEqual(str(a[2:7]), '00011')
+
+        self.assertEqual(str(a[3:3]), '')
+        self.assertEqual(str(a[3:4]), '1')
+        self.assertEqual(str(a[3:5]), '01')
+        self.assertEqual(str(a[3:6]), '001')
+        self.assertEqual(str(a[3:7]), '0001')
+
+        self.assertEqual(str(a[4:4]), '')
+        self.assertEqual(str(a[4:5]), '0')
+        self.assertEqual(str(a[4:6]), '00')
+        self.assertEqual(str(a[4:7]), '000')
+
+        self.assertEqual(str(a[5:5]), '')
+        self.assertEqual(str(a[5:6]), '0')
+        self.assertEqual(str(a[5:7]), '00')
+
+        self.assertEqual(str(a[6:6]), '')
+        self.assertEqual(str(a[6:7]), '0')
+
+        self.assertEqual(str(a[7:7]), '')
+
+        self.assertEqual(str(b[0:0]), '')
+        self.assertEqual(str(b[0:1]), '1')
+        self.assertEqual(str(b[0:2]), '01')
+        self.assertEqual(str(b[0:3]), '101')
+        self.assertEqual(str(b[0:4]), '1101')
+        self.assertEqual(str(b[0:5]), '11101')
+        self.assertEqual(str(b[0:6]), '111101')
+        self.assertEqual(str(b[0:7]), '1111101')
+
+        self.assertEqual(str(b[1:1]), '')
+        self.assertEqual(str(b[1:2]), '0')
+        self.assertEqual(str(b[1:3]), '10')
+        self.assertEqual(str(b[1:4]), '110')
+        self.assertEqual(str(b[1:5]), '1110')
+        self.assertEqual(str(b[1:6]), '11110')
+        self.assertEqual(str(b[1:7]), '111110')
+
+        self.assertEqual(str(b[2:2]), '')
+        self.assertEqual(str(b[2:3]), '1')
+        self.assertEqual(str(b[2:4]), '11')
+        self.assertEqual(str(b[2:5]), '111')
+        self.assertEqual(str(b[2:6]), '1111')
+        self.assertEqual(str(b[2:7]), '11111')
+
+        self.assertEqual(str(b[3:3]), '')
+        self.assertEqual(str(b[3:4]), '1')
+        self.assertEqual(str(b[3:5]), '11')
+        self.assertEqual(str(b[3:6]), '111')
+        self.assertEqual(str(b[3:7]), '1111')
+
+        self.assertEqual(str(b[4:4]), '')
+        self.assertEqual(str(b[4:5]), '1')
+        self.assertEqual(str(b[4:6]), '11')
+        self.assertEqual(str(b[4:7]), '111')
+
+        self.assertEqual(str(b[5:5]), '')
+        self.assertEqual(str(b[5:6]), '1')
+        self.assertEqual(str(b[5:7]), '11')
+
+        self.assertEqual(str(b[6:6]), '')
+        self.assertEqual(str(b[6:7]), '1')
+
+        self.assertEqual(str(b[7:7]), '')
+
 
 class TestCompare(unittest.TestCase):
     def test_unsigned_cmps(self):
@@ -360,31 +486,28 @@ class TestCompare(unittest.TestCase):
                 self.assertEqual(xx<y, x<y)
                 self.assertEqual(xx<=y, x<=y)
 
-class AliasTest(unittest.TestCase):
-    def test_base(self):
-        OBJ_TO_TEST = ['1111', 15, b'\x0F', '0xf']
+class BinaryFunctions(unittest.TestCase):
+    def test_sign_behavior(self):
+        from pybytes.alias import u4, i4, u8, i8
+        
+        self.assertEqual(u4('0000').sign_behavior(), 'unsigned')
+        self.assertEqual(i4('0000').sign_behavior(), 'signed')
 
-        for size in range(4, 32):
-            for obj in OBJ_TO_TEST:
-                val = alias.unsigned_bin(obj, size)
+        self.assertEqual(u4('0000').sign_extending_bit(), False)
+        self.assertEqual(u4('1000').sign_extending_bit(), False)
+        self.assertEqual(i4('0000').sign_extending_bit(), False)
+        self.assertEqual(i4('1000').sign_extending_bit(), True)
 
-                self.assertEqual(val.len, size)
-                self.assertEqual(val.sign_behavior(), 'unsigned')
-                self.assertEqual(val.int(), 15)
-    def test_uN(self):
-        uN = [(alias.u2, 2), (alias.u3, 3), (alias.u4, 4), (alias.u5, 5), (alias.u6, 6), (alias.u7, 7), (alias.u8, 8), (alias.u16, 16), (alias.u32, 32)]
+        self.assertEqual(u4('0000').is_negative(), False)
+        self.assertEqual(u4('1000').is_negative(), False)
+        self.assertEqual(i4('1111').is_negative(), True)
 
-        for (func, size) in uN:
-            self.assertEqual(func(1), Binary(1, lenght=size, sign_behavior='unsigned'))
+        self.assertEqual(u4('1111').low_byte(), u8('0000 1111'))
+        self.assertEqual(i4('1111').low_byte(), i8('1111 1111'))
+        
+        self.assertEqual(u4('1111').high_byte(), u8('0000 0000'))
+        self.assertEqual(i4('1111').high_byte(), i8('1111 1111'))
 
-    def test_iN(self):
-        iN = [(alias.i2, 2), (alias.i3, 3), (alias.i4, 4), (alias.i5, 5), (alias.i6, 6), (alias.i7, 7), (alias.i8, 8), (alias.i16, 16), (alias.i32, 32)]
-
-        for val in [0, 1, -1]:
-            for (func, size) in iN:
-                as_bin: Binary = func(val)
-                self.assertEqual(as_bin, Binary(val, lenght=size, sign_behavior='signed'))
-                self.assertEqual(as_bin.int(), val)
 
 class Operations(unittest.TestCase):
     def test_add(self):
@@ -446,3 +569,25 @@ class Operations(unittest.TestCase):
                 self.assertEqual(arithm.bitwise_nand(u4(a), u4(b)).int(), (a&b)^0xf)
                 self.assertEqual(arithm.bitwise_nor(u4(a), u4(b)).int(), (a|b)^0xf)
                 self.assertEqual(arithm.bitwise_xnor(u4(a), u4(b)).int(), (a^b)^0xf)
+    def test_bitwise_with_diffrent_sizes(self):
+        from pybytes.alias import u4, u7, i4
+
+        self.assertEqual(arithm.bitwise_and(u7('111 1111'), u4('0001')), u7('000 0001'))
+        self.assertEqual(arithm.bitwise_or (u7('111 1111'), u4('0001')), u7('111 1111'))
+        self.assertEqual(arithm.bitwise_and(u7('111 1111'), i4('0001')), u7('000 0001'))
+        self.assertEqual(arithm.bitwise_and(u7('111 1111'), i4('1001')), u7('111 1001'))
+        
+    def test_mul(self):
+        TEST_CASES = [1,2,3,5,16,32,1024,2**31,2**32, -2**32, -1,-2,-3]
+
+        for i in TEST_CASES:
+            for j in TEST_CASES:
+                ii, jj = Binary(i), Binary(j)
+
+                self.assertEqual(arithm.multiply(ii, jj).int(), i*j)
+    def test_mul_2(self):
+        from pybytes.alias import i4, u4, i8, u8
+
+        self.assertEqual(arithm.multiply(u4('0001'), u4('0001')), u8('0000 0001'))
+        self.assertEqual(arithm.multiply(u4('0010'), u4('0010')), u8('0000 0100'))
+        self.assertEqual(arithm.multiply(u4('1111'), u4('0010')), u8('0001 1110'))

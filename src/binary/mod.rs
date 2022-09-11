@@ -33,15 +33,27 @@ pub struct BinaryRange {
 
 impl BinaryRange
 {
-    pub fn new(start: u64, wrapped_stop: u64, stop: u64, step: u64) -> BinaryRange {
-        BinaryRange {
+    pub fn new(start: u64, stop: u64, step: u64, len: u64) -> PyResult<BinaryRange> {
+        let wrapped_stop = stop.min(len);
+
+        if stop < start {
+            return Err(exceptions::PyValueError::new_err(format!("Stop index is smaller than start index: {} < {}", wrapped_stop, start)));
+        }
+        
+        Ok(BinaryRange {
             range: start..wrapped_stop,
             stop,
             step,
-        }
+        })
     }
-    pub fn range(&self) -> Range<u64> {
-        self.range.clone()
+    pub fn range(&self) -> Range<u64> 
+    {
+        if self.get_start() >= self.get_wrapped_end() {
+            self.get_wrapped_end()..self.get_wrapped_end()
+        }
+        else {
+            self.range.clone()
+        }
     }
     pub fn len(&self) -> u64 {
         (self.stop - self.range.start) / self.step
@@ -486,13 +498,7 @@ impl BinaryBase
         let stop: u64  = self.flatten_index(slice.stop).try_into().unwrap();
         let step: u64  = slice.step.try_into().unwrap();
 
-        let stop_wrapped = stop.min(self.len());
-
-        if stop_wrapped < start {
-            return Err(exceptions::PyValueError::new_err(format!("Stop index is smaller than start index: {} < {}", stop_wrapped, start)));
-        }
-
-        Ok(BinaryRange::new(start, stop_wrapped, stop, step))
+        BinaryRange::new(start, stop, step, self.len())
     }
 
 
@@ -512,7 +518,7 @@ impl BinaryBase
         let slice = self.data.bit_slice(range.range()).to_bit_vec();
 
         // get padding bits for slice outside t
-        let padd = bv::BitVec::new_fill(self.sign_extending_bit(), (range.get_real_end() as i64 - range.get_wrapped_end() as i64).max(0) as u64);
+        let padd = bv::BitVec::new_fill(self.sign_extending_bit(), (range.len() as i64 - slice.len() as i64).max(0) as u64);
 
         let concated = slice.bit_concat(padd).to_bit_vec();
 

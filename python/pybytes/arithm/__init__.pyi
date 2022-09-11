@@ -225,7 +225,7 @@ def bitwise_not(binary: Binary) -> Binary:
 def bitwise_or(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_or
-    Bitwise OR of binary numbers
+    Bitwise OR of binary numbers. If they differ in lenght. Smaller value will be sign-extended to match
     ```
     >>> bitwise_or(u8(1), u8(2))
     '00000011'
@@ -235,7 +235,7 @@ def bitwise_or(binary: Binary, b: Any) -> Binary:
 def bitwise_and(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_and
-    Bitwise AND of binary numbers
+    Bitwise AND of binary numbers. If they differ in lenght. Smaller value will be sign-extended to match
     ```
     >>> bitwise_and(u8(1), u8(2))
     '00000000'
@@ -247,7 +247,7 @@ def bitwise_and(binary: Binary, b: Any) -> Binary:
 def bitwise_xor(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_xor
-    Bitwise XOR of binary numbers
+    Bitwise XOR of binary numbers. If they differ in lenght. Smaller value will be sign-extended to match
     ```
     >>> bitwise_xor(u8(1), u8(2))
     '00000011'
@@ -259,7 +259,7 @@ def bitwise_xor(binary: Binary, b: Any) -> Binary:
 def bitwise_xnor(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_xnor
-    Bitwise XNOR of binary numbers
+    Bitwise XNOR of binary numbers. If they differ in lenght. Smaller value will be sign-extended to match
     ```
     >>> bitwise_xnor(u8(1), u8(2))
     '11111100'
@@ -271,7 +271,7 @@ def bitwise_xnor(binary: Binary, b: Any) -> Binary:
 def bitwise_nand(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_nand
-    Bitwise NAND of binary numbers
+    Bitwise NAND of binary numbers. If they differ in lenght. Smaller value will be sign-extended to match
     ```
     >>> bitwise_nand(u8(1), u8(2))
     '11111111'
@@ -283,7 +283,7 @@ def bitwise_nand(binary: Binary, b: Any) -> Binary:
 def bitwise_nor(binary: Binary, b: Any) -> Binary:
     """
     ## bitwise_noreset
-    Bitwise NOR of binary numbers
+    Bitwise NOR of binary numbers. If they differ in lenght. Smaller value will be sign-extended to match
     ```
     >>> bitwise_nor(u8(1), u8(2))
     '11111100'
