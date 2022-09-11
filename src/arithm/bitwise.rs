@@ -3,7 +3,6 @@ use std::convert::TryInto;
 use crate::binary::BinaryBase;
 use pyo3::{prelude::*, types::PySliceIndices};
 
-
 macro_rules! gen_bitwise_all { 
     ($([$function:ident, $neg_function:ident, $bv_function:ident]),*) => {
         pub mod bitwise_base {
@@ -16,10 +15,12 @@ macro_rules! gen_bitwise_all {
 
             $(
                 pub fn $function(a: &BinaryBase, b: &BinaryBase) -> BinaryBase {
-                    BinaryBase::from_parts(a.data.$bv_function(&b.data).to_bit_vec(), a.sign_behavior.clone())
+                    let value = a.data.$bv_function(&b.data).to_bit_vec();
+                    BinaryBase::from_parts(value, a.sign_behavior.clone())
                 }
                 pub fn $neg_function(a: &BinaryBase, b: &BinaryBase) -> BinaryBase {
-                    BinaryBase::from_parts(a.data.$bv_function(&b.data).bit_not().to_bit_vec(), a.sign_behavior.clone())
+                    let value = a.data.$bv_function(&b.data).bit_not().to_bit_vec();
+                    BinaryBase::from_parts(value, a.sign_behavior.clone())
                 }
             )*
     

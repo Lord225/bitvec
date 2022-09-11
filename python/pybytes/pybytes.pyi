@@ -216,26 +216,45 @@ class Binary:
         """
         ...
 
-    def hex(self) -> str:
+    def hex(self, prefix=True) -> str:
         """
         ## hex
-        Returns hex representation of the number with prefix. It does not add negative sign.
+        Returns hex representation of the number with prefix. It do not add negative sign. You can remove '0x' part by setting `prefix` argument to False
         It is an alias for `__hex__` method
         >>> Binary("11111111").hex()
         '0xff'
+        >>> Binary("11111111").hex(prefix=False)
+        'ff'
+
+        It is an alias for `__hex__` method. But `__hex__` will always add prefx
+        >>> hex(Binary("11111111"))
+        '0xff'
+        
         ## Similar methods
         * __hex__
         * bin
         * int
         """
         ...
-    def bin(self) -> str: 
+    def bin(self, prefix=True) -> str: 
         """
         ## bin
-        Returns binary representation of the number with prefix. It does not add negative sign.
+        Returns binary representation of the number with prefix. It does not add negative sign. You can remove '0b' part by setting `prefix` argument to False
         It is an alias for `__bin__` method
         >>> Binary("11111111").bin()
         '0b11111111'
+        >>> Binary("11111111").bin(False)
+        '11111111'
+        
+        It is an alias for `__bin__` method. But `__bin__` will always add prefx
+        
+        >>> bin(Binary("11111111"))
+        '0b11111111'
+        
+        ## Similar methods
+        * __bin__
+        * hex
+        * int
         """
         ...
     def int(self) -> int:

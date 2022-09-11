@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 from pybytes import Binary
 from pybytes import arithm
+from pybytes import alias
 
 # python -m unittest python\tests\tests.py
 
@@ -359,6 +360,32 @@ class TestCompare(unittest.TestCase):
                 self.assertEqual(xx<y, x<y)
                 self.assertEqual(xx<=y, x<=y)
 
+class AliasTest(unittest.TestCase):
+    def test_base(self):
+        OBJ_TO_TEST = ['1111', 15, b'\x0F', '0xf']
+
+        for size in range(4, 32):
+            for obj in OBJ_TO_TEST:
+                val = alias.unsigned_bin(obj, size)
+
+                self.assertEqual(val.len, size)
+                self.assertEqual(val.sign_behavior(), 'unsigned')
+                self.assertEqual(val.int(), 15)
+    def test_uN(self):
+        uN = [(alias.u2, 2), (alias.u3, 3), (alias.u4, 4), (alias.u5, 5), (alias.u6, 6), (alias.u7, 7), (alias.u8, 8), (alias.u16, 16), (alias.u32, 32)]
+
+        for (func, size) in uN:
+            self.assertEqual(func(1), Binary(1, lenght=size, sign_behavior='unsigned'))
+
+    def test_iN(self):
+        iN = [(alias.i2, 2), (alias.i3, 3), (alias.i4, 4), (alias.i5, 5), (alias.i6, 6), (alias.i7, 7), (alias.i8, 8), (alias.i16, 16), (alias.i32, 32)]
+
+        for val in [0, 1, -1]:
+            for (func, size) in iN:
+                as_bin: Binary = func(val)
+                self.assertEqual(as_bin, Binary(val, lenght=size, sign_behavior='signed'))
+                self.assertEqual(as_bin.int(), val)
+
 class Operations(unittest.TestCase):
     def test_add(self):
         self.assertEqual(Binary("0000 0001")+Binary("0000 0001"), Binary("0000 0010"))
@@ -380,7 +407,7 @@ class Operations(unittest.TestCase):
                 self.assertEqual(xx+yy, arithm.wrapping_add(xx, yy))
     def test_add_lenghts(self):
         NUMS_TO_TEST = [i for i in range(0, 15)]
-        SIZES = [i for i in range(4, 66, 2)]
+        SIZES = [i for i in range(4, 66, 4)]
         
         for x in NUMS_TO_TEST:
             for y in NUMS_TO_TEST:
@@ -389,6 +416,7 @@ class Operations(unittest.TestCase):
                     yy = Binary(y, lenght=size)
 
                     self.assertEqual(xx+yy, arithm.wrapping_add(xx, yy))
+
     def test_sub(self):
         self.assertEqual(Binary("0000 0001")-Binary("0000 0001"), Binary("0000 0000"))
         self.assertEqual(Binary("0000 0000")-Binary("0000 0001"), Binary("1111 1111"))
@@ -396,4 +424,25 @@ class Operations(unittest.TestCase):
         self.assertEqual(Binary("0 0000 0000")-Binary("0000 0001"), Binary("1 1111 1111"))
         self.assertEqual(Binary("1 0000 0000")-Binary("0000 0001"), Binary("0 1111 1111"))
 
+    def test_sub_long(self):
+        NUMS_TO_TEST = [1,2,4,15, 2**63,2**64-1, 2**64]
+
+        for x in NUMS_TO_TEST:
+            for y in NUMS_TO_TEST:
+                xx = Binary(x, lenght=65)
+                yy = Binary(y, lenght=65)
+
+                self.assertEqual(xx-yy, arithm.wrapping_sub(xx, yy))
+    def test_bitwise(self):
+        from pybytes.alias import u4
+        TEST_CASES = [i for i in range(0, 16)]
         
+        for a in TEST_CASES:
+            for b in TEST_CASES:
+                self.assertEqual(arithm.bitwise_and(u4(a), u4(b)).int(), a&b)
+                self.assertEqual(arithm.bitwise_or(u4(a), u4(b)).int(), a|b)
+                self.assertEqual(arithm.bitwise_xor(u4(a), u4(b)).int(), a^b)
+                
+                self.assertEqual(arithm.bitwise_nand(u4(a), u4(b)).int(), (a&b)^0xf)
+                self.assertEqual(arithm.bitwise_nor(u4(a), u4(b)).int(), (a|b)^0xf)
+                self.assertEqual(arithm.bitwise_xnor(u4(a), u4(b)).int(), (a^b)^0xf)

@@ -63,16 +63,7 @@ def signed_bin(object: object = None, size: Optional[int] = None, raise_on_big_v
     """
     Returns `Binary` object with sign_behavior set to 'signed'
     """
-    v = Binary(object, sign_behavior='signed')
-    size = size if size is not None else len(v)
-    
-    if len(v) > size:
-        if raise_on_big_value:
-            raise ValueError(f"Cannot convert {object} to signed {size} bit value.")
-        else:
-            return v
-    else:
-        return pybytes.arithm.pad_sign_extend(v, size) #type: ignore
+    return Binary(object, lenght=size, sign_behavior='signed')
 
 def i2(object: object = None) -> Binary:
     """

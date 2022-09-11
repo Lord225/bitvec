@@ -89,6 +89,15 @@ impl Binary
             (None, None, None, None)
         })
     }
+    fn parse_prefix_kwargs_args(args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> bool
+    {
+        match args.as_slice() {
+            [value] if value.is_true().is_ok() => value.is_true().unwrap(),
+            _                => kwargs.and_then(|kwargs| kwargs.get_item("prefix"))
+                                      .and_then(|x| x.is_true().ok())
+                                      .unwrap_or(true)
+        }
+    }
 }
 
 impl Binary
@@ -179,7 +188,7 @@ impl Binary
 {
     #[new]
     #[args(args = "*", kwargs = "**")]
-    fn py_new(object: &PyAny, args: &types::PyTuple, kwargs: Option<&types::PyDict>,) -> PyResult<Self> 
+    fn py_new(object: &PyAny, args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> PyResult<Self> 
     {
         // arguments:
         // * lenght
@@ -223,7 +232,12 @@ impl Binary
 
     #[getter]
     pub fn _data(&self) -> PyObject {
-        let mut bytes  = self.inner.data.clone().into_boxed_slice();
+        use bv::{BitsExt};
+        let mut bytes  = if self.sign_behavior() == "unsigned" { 
+            self.inner.data.bit_concat(bv::BitVec::new()).to_bit_vec().into_boxed_slice()  // for unsigned mask bitvec
+        } else { 
+            self.inner.data.clone().into_boxed_slice() // for signed do not mask bitvec
+        };
         let (_, bytes, _) = unsafe { bytes.align_to_mut::<u8>() };
 
         Python::with_gil(|py| types::PyBytes::new(py, bytes).to_object(py))
@@ -327,12 +341,14 @@ impl Binary
         }
         Ok(())
     }
-
-    pub fn hex(&self) -> String {
-        self.inner.to_string_hex(true)
+    
+    #[args(args = "*", kwargs = "**")]
+    pub fn hex(&self, args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> String {
+        self.inner.to_string_hex(Self::parse_prefix_kwargs_args(args, kwargs))
     }
-    pub fn bin(&self) -> String {
-        self.inner.to_string_bin(true)
+    #[args(args = "*", kwargs = "**")]
+    pub fn bin(&self, args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> String {
+        self.inner.to_string_bin(Self::parse_prefix_kwargs_args(args, kwargs))
     }
     pub fn int(&self) -> PyResult<PyObject> {
         Python::with_gil(|py| {
@@ -346,10 +362,10 @@ impl Binary
         self.int()
     }
     pub fn __hex__(&self) -> String {
-        self.hex()
+        self.inner.to_string_hex(true)
     }
     pub fn __bin__(&self) -> String {
-        self.bin()
+        self.inner.to_string_bin(true)
     }
 
     pub fn __len__(&self) -> usize {
