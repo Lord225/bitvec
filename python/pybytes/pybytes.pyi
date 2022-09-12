@@ -18,6 +18,7 @@ class Binary:
             * sign_behavior - How number should implement sign.
             ## Examples
             
+            >>> from pybytes import Binary
             >>> Binary("0110") # From string representing binary number. Following zeros are used to inherit len of number.
             '0110'
             >>> Binary(4, lenght=8) # Crate number with 8 bits, 4 is converted to binary and padded with zeros.
@@ -33,6 +34,7 @@ class Binary:
             ### Alias
             Module defines factories with predefined sizes and behaviors like u8, u16, i16, i64 ect. These ones can be used as followed:
             
+            >>> from pybytes.alias import u8
             >>> u8(3)
             '00000011'
         
@@ -141,10 +143,87 @@ class Binary:
             * step value is not supported.
 
             ## Iterating
+            You can iterate over bits of the number:
+            >>> num = Binary("FA") # 11111010
+            >>> for bit in num: # or num.bits()
+            ...     print(bit, end=" ")
+            False True True True True False True False
 
-            '00100110'
-            ### Arithmetic  
-            ## See also
+            Or over bytes:
+            >>> num = Binary("FA") # 11111010
+            >>> for byte in num.bytes():
+            ...     print(byte, end=" ")
+            11111010
+
+            Or over any other chunk of bits with `iter` function. For more sophisticated iteration you can use `itertools` or just play with indexing and slicing.
+
+            ## Arithmetic  
+            In module `arithm` there are functions that can be used to perform arithmetic/logical operations on binary numbers. That's includes
+            * Addition - `wrapping_add` and others
+            * Subtraction - `wrapping_sub` and others
+            * Multiplication - `wrapping_mul` and others
+            * Shifts - `overflowing_lsh`, `wrapping_rsh` and others
+            * Bitwise operations - `bitwise_and`, `bitwise_or` and others
+            * Casting & Conversions - `cast`, `pad_zeros` and others
+
+            Import this submodule and check all of them!
+
+            >>> from pybytes import arithm
+            >>> arithm.wrapping_add("1111", "0001") 
+            '0000' # 15 + 1 = 16, but we have only 4 bits, so we wrap around and get 0
+            >>> arithm.overflowing_add("1111", "0001")
+            ('0000', True) # If you want to know if there was overflow, use overflowing_add
+            >>> overflowing_lsh(u8('0100 1010'), 2)
+            ('00101000', '01') # 0100 1010 << 2 = 0010 1000, but we have only 8 bits, so we wrap around to get 0010 1000, and we have 2 'wrapped' bits from left, so we return them as second value
+
+            Some functions are implemented for Binary class (usually wrapping ones), so you can use them directly with operators number:
+            >>> u8("0100 1010") + u8("0000 0010")
+            '0100 1100'
+            
+            That includes:
+            * `__add__`, `__sub__`, `__mul__`, `__lshift__`, `__rshift__`, `__and__`, `__or__`, `__xor__`, `__invert__`, `__neg__`
+
+            ## Creating numbers - details 
+            * If you didn't specify lenght, it will be calculated from value
+              * For string it will be lenght of string including leading zeros/ones
+              * For int it will be minimal lenght of binary representation of the number
+            * If you specify lenght, it will be used but if value is longer, it will raise an error
+
+            This module assumes that for `signed` numbers the most significant bit is sign bit. So for signed number with lenght of `1` (so we have `only` sign_bit that has weight equal to `-1`) possible values will be `0` and `-1`
+            Numbers with lenght of `0` will be always treated as `0`
+            ### Examples
+            >>> Binary(0                        )  # lenght will be 0, displayed as ''
+            >>> Binary(0,               lenght=1)  # lenght will be 1, displayed as '0'
+            >>> Binary(0,               lenght=2)  # lenght will be 2, displayed as '00'
+            >>> Binary(0,  signed=True          )  # lenght will be 0, displayed as '0'
+            >>> Binary(0,  signed=True, lenght=1)  # lenght will be 1, displayed as '0'
+            >>> Binary(-1, signed=True, lenght=1)  # lenght will be 1, displayed as '1'
+            >>> Binary(-1, signed=True, lenght=2)  # lenght will be 2, displayed as '11'
+            >>> Binary(1,  signed=True          )  # lenght will be 2, displayed as '01'
+
+            This behavior is based on the interpretation of the number as a signed integer where sign bit is treated as it has negative weight
+            ```txt
+            for unsigned:
+
+            0 0 0 0
+             \\ \\ \\ \\_ weight 1
+              \\ \\ \\__ weight 2
+               \\ \\___ weight 4
+                \\____ weight 8
+            Value = sum of weights of bits set to 1
+            ```
+
+            ```txt
+            for signed:
+                
+            0 0 0 0
+             \\ \\ \\ \\_ weight 1
+              \\ \\ \\__ weight 2
+               \\ \\___ weight 4
+                \\____ weight -8
+            Value = sum of weights of bits set to 1
+            ```
+            And zero-lenght number just fills up the pattern.
         """
         ...
 
@@ -310,6 +389,17 @@ class Binary:
         """
         ...
 
+    def get_byte(self, index: int) -> Binary:
+        """
+        ## get_byte
+        Returns byte at specified index. Padded with sign extending bit.
+        >>> Binary("1111 1111 1111").get_byte(0)
+        '11111111'
+        >>> Binary("1111 1111 1111").get_byte(1)
+        '00001111'
+        """
+        ...
+    
     def bits(self) -> BinaryIterator: 
         """
         ## bits

@@ -9,8 +9,8 @@ from pybytes import alias
 class TestConstruct(unittest.TestCase):
     def test_from_int(self):
         value = Binary(0)
-        self.assertEqual(str(value), "0")
-        self.assertEqual(value.len, 1)
+        self.assertEqual(str(value), "")
+        self.assertEqual(value.len, 0)
 
         value = Binary(1)
         self.assertEqual(str(value), "1")
@@ -39,15 +39,15 @@ class TestConstruct(unittest.TestCase):
     def test_from_int_signed(self):
         value = Binary(-1)
         self.assertEqual(value.sign_behavior(), 'signed')
-        self.assertEqual(str(value), '11')
+        self.assertEqual(str(value), '1')
 
         value = Binary(-2)
         self.assertEqual(value.sign_behavior(), 'signed')
-        self.assertEqual(str(value), '110')
+        self.assertEqual(str(value), '10')
         
         value = Binary(-256)
         self.assertEqual(value.sign_behavior(), 'signed')
-        self.assertEqual(str(value), '11 00000000')
+        self.assertEqual(str(value), '1 00000000')
 
         value = Binary(-1, lenght=9)
         self.assertEqual(value.sign_behavior(), 'signed')
@@ -123,6 +123,33 @@ class TestConstruct(unittest.TestCase):
     def test_rises(self):
         with self.assertRaises(Exception):
             Binary(0, byte_lenght=2, lenght=1)
+    def test_edge_cases(self):
+        self.assertEqual(Binary(0, lenght=0, sign_behavior='unsigned').int(), 0)
+        with self.assertRaises(Exception):
+            Binary(1, lenght=0, sign_behavior='unsigned')
+        with self.assertRaises(Exception):
+            Binary(-1, lenght=0, sign_behavior='unsigned')
+
+        self.assertEqual(Binary(0, lenght=1, sign_behavior='unsigned').int(), 0)
+        self.assertEqual(Binary(1, lenght=1, sign_behavior='unsigned').int(), 1)
+        with self.assertRaises(Exception):
+            Binary(-1, lenght=1, sign_behavior='unsigned')
+        with self.assertRaises(Exception):
+            Binary(2, lenght=1, sign_behavior='unsigned')
+
+        self.assertEqual(Binary(0, lenght=0, sign_behavior='signed').int(), 0)
+        with self.assertRaises(Exception):
+            Binary(1, lenght=0, sign_behavior='signed')
+        with self.assertRaises(Exception):
+            Binary(-1, lenght=0, sign_behavior='signed')
+            
+        self.assertEqual(Binary(0, lenght=1, sign_behavior='signed').int(), 0)
+        self.assertEqual(Binary(-1, lenght=1, sign_behavior='signed').int(), -1)
+        with self.assertRaises(Exception):
+            Binary(1, lenght=1, sign_behavior='signed')
+        with self.assertRaises(Exception):
+            Binary(-2, lenght=1, sign_behavior='signed')
+        
 
 class TestConversions(unittest.TestCase):
     def test_as_int(self):
@@ -183,7 +210,7 @@ class TestConversions(unittest.TestCase):
 
     def test_as_hex(self):
         value = Binary(0)
-        self.assertEqual(value.hex(), "0x0")
+        self.assertEqual(value.hex(), "0x")
 
         value = Binary(1)
         self.assertEqual(value.hex(), "0x1")
@@ -211,7 +238,7 @@ class TestConversions(unittest.TestCase):
         self.assertEqual(value.hex(), "0x0001")
     def test_as_bin(self):
         value = Binary(0)
-        self.assertEqual(value.bin(), "0b0")
+        self.assertEqual(value.bin(), "0b")
 
         value = Binary(0, lenght=0)
         self.assertEqual(value.bin(), "0b")
@@ -242,9 +269,9 @@ class TestConversions(unittest.TestCase):
         self.assertEqual(value.bin(), "0b0000000000000001")
 
         value = Binary(0)
-        self.assertEqual(value.bin(prefix=False), "0")
+        self.assertEqual(value.bin(prefix=False), "")
         value = Binary(0)
-        self.assertEqual(value.bin(False), "0")
+        self.assertEqual(value.bin(False), "")
 
 class AliasTest(unittest.TestCase):
     def test_base(self):
@@ -472,14 +499,14 @@ class TestCompare(unittest.TestCase):
                 self.assertEqual(xx<yy, x<y)
                 self.assertEqual(xx<=yy, x<=y)
 
-                self.assertEqual(x==yy, x==y)
+                self.assertEqual(x==yy, x==y, f'{x}=={yy}, {x}=={y}')
                 self.assertEqual(x!=yy, x!=y)
                 self.assertEqual(x>yy, x>y)
                 self.assertEqual(x>=yy, x>=y)
                 self.assertEqual(x<yy, x<y)
                 self.assertEqual(x<=yy, x<=y)
 
-                self.assertEqual(xx==y, x==y)
+                self.assertEqual(xx==y, x==y, f'{xx}=={y}, {x}=={y}')
                 self.assertEqual(xx!=y, x!=y)
                 self.assertEqual(xx>y, x>y)
                 self.assertEqual(xx>=y, x>=y)
@@ -488,7 +515,7 @@ class TestCompare(unittest.TestCase):
 
 class BinaryFunctions(unittest.TestCase):
     def test_sign_behavior(self):
-        from pybytes.alias import u4, i4, u8, i8
+        from pybytes.alias import u4, i4, u8, i8, i16
         
         self.assertEqual(u4('0000').sign_behavior(), 'unsigned')
         self.assertEqual(i4('0000').sign_behavior(), 'signed')
@@ -507,6 +534,10 @@ class BinaryFunctions(unittest.TestCase):
         
         self.assertEqual(u4('1111').high_byte(), u8('0000 0000'))
         self.assertEqual(i4('1111').high_byte(), i8('1111 1111'))
+
+        self.assertEqual(i16('0100 0011 0010 0001').get_byte(0), i8('0010 0001'))
+        self.assertEqual(i16('0100 0011 0010 0001').get_byte(1), i8('0100 0011'))
+        self.assertEqual(i16('0100 0011 0010 0001').get_byte(2), i8('0000 0000'))
 
 
 class Operations(unittest.TestCase):
@@ -576,7 +607,27 @@ class Operations(unittest.TestCase):
         self.assertEqual(arithm.bitwise_or (u7('111 1111'), u4('0001')), u7('111 1111'))
         self.assertEqual(arithm.bitwise_and(u7('111 1111'), i4('0001')), u7('000 0001'))
         self.assertEqual(arithm.bitwise_and(u7('111 1111'), i4('1001')), u7('111 1001'))
+    def test_bitwise_operators(self):
+        from pybytes.alias import u8, i4
+        a,b = u8(6), u8(14)
+
+        self.assertEqual(a|b, u8('0000 1110'))
+        self.assertEqual(a^b, u8('0000 1000'))
+        self.assertEqual(a&b, u8('0000 0110'))
+        self.assertEqual(~b,  u8('1111 0001')) 
+        self.assertEqual(-b,  u8('1111 0010')) # -14
+
+        self.assertEqual(a|1, u8('0000 0111'))
+        self.assertEqual(a&1, u8('0000 0000'))
+        self.assertEqual(a&2, u8('0000 0010'))
         
+        c, d = i4('0001'), i4('1111')
+        
+        self.assertEqual(a|c, u8('0000 0111'))
+        self.assertEqual(a|d, u8('1111 1111'))  # i4 extended to i8, sign is taken from first arg
+        self.assertEqual(a^d, u8('1111 1001'))
+
+
     def test_mul(self):
         TEST_CASES = [1,2,3,5,16,32,1024,2**31,2**32, -2**32, -1,-2,-3]
 
@@ -585,7 +636,7 @@ class Operations(unittest.TestCase):
                 ii, jj = Binary(i), Binary(j)
 
                 self.assertEqual(arithm.multiply(ii, jj).int(), i*j)
-    def test_mul_2(self):
+    def test_mul_u4(self):
         from pybytes.alias import i4, u4, i8, u8
 
         self.assertEqual(arithm.multiply(u4('0001'), u4('0001')), u8('0000 0001'))

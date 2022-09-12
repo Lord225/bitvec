@@ -175,6 +175,8 @@ impl Binary
         // extract binary or crate new from object
         if let Ok(bin) = obj.extract::<PyRef<Binary>>() { 
             cmp::cmp(&self, &bin)
+        } else if let Ok( bin) = Self::from(obj, Some(self.len()), Some(self.sign_behavior())) {
+            cmp::cmp(&self, &bin)
         } else if let Ok( bin) = Self::from(obj, None, Some(self.sign_behavior())) {
             cmp::cmp(&self, &bin)
         } else {
@@ -389,6 +391,43 @@ impl Binary
     pub fn __sub__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
         arithm::sub::wrapping_sub(_self, other)
     }
+    pub fn __and__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
+        if let Ok(other) = other.extract::<PyRef<Binary>>() {
+            arithm::bitwise::bitwise_and(_self, other)
+        } else {
+            Python::with_gil(|py| {
+                let binary = Binary::from(other, None, Some(_self.sign_behavior()))?.into_py(py);
+                let pyref = PyRef::extract(binary.as_ref(py))?;
+            
+                arithm::bitwise::bitwise_and(_self, pyref)
+            })
+        }
+    }
+    pub fn __or__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
+        if let Ok(other) = other.extract::<PyRef<Binary>>() {
+            arithm::bitwise::bitwise_or(_self, other)
+        } else {
+            Python::with_gil(|py| {
+                let binary = Binary::from(other, None, Some(_self.sign_behavior()))?.into_py(py);
+                let pyref = PyRef::extract(binary.as_ref(py))?;
+            
+                arithm::bitwise::bitwise_or(_self, pyref)
+            })
+        }
+    }
+    pub fn __xor__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
+        if let Ok(other) = other.extract::<PyRef<Binary>>() {
+            arithm::bitwise::bitwise_xor(_self, other)
+        } else {
+            Python::with_gil(|py| {
+                let binary = Binary::from(other, None, Some(_self.sign_behavior()))?.into_py(py);
+                let pyref = PyRef::extract(binary.as_ref(py))?;
+            
+                arithm::bitwise::bitwise_xor(_self, pyref)
+            })
+        }
+    }
+
 
     pub fn __neg__(_self: PyRef<'_, Self>) -> PyResult<PyObject>{
         arithm::add::arithmetic_neg(_self)

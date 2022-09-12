@@ -2,7 +2,7 @@ pub mod reduce;
 pub mod sliceunpack;
 
 use std::mem::transmute;
-use std::ops::{Range, RangeFrom};
+use std::ops::Range;
 
 use bv::{self, Bits, BitsPush, BitSlice, BitSliceable, BitsExt, BitSliceableMut, BitsMut };
 
@@ -218,14 +218,33 @@ impl BinaryBase
 
 // Object Construction
 impl BinaryBase {
-    fn check_for_size(&self, range: RangeFrom<u64>) -> PyResult<()>
+    fn check_for_size(&self, range: u64) -> PyResult<()>
     {
-        if range.start <= self.data.len()
+        fn check_unsigned(data: &bv::BitVec<u32>, range: u64) -> bool
         {
-            if (self.sign_behavior == "unsigned" &&   self.data.bit_slice(range.clone()).any()) || 
-               (self.sign_behavior == "signed"   && !(self.data.bit_slice(range.clone()).all()  || self.data.bit_slice(range.clone()).none()))
+            data.bit_slice(range..).any()
+        }
+        fn check_signed(data: &bv::BitVec<u32>, range: u64) -> bool
+        {
+            if range == 0 {
+                return data.bit_slice(..).any();
+            }
+
+            let sign_bit = data.get_bit(range-1);
+
+            if sign_bit {
+                !(data.bit_slice(range..).all() || data.bit_slice(range..).none())
+            } else {
+                data.bit_slice(range..).any()
+            }
+        }
+        // 1
+        if range <= self.data.len()
+        {
+            if (self.sign_behavior == "unsigned" && check_unsigned(&self.data, range)) || 
+               (self.sign_behavior == "signed"   && check_signed(&self.data, range))
             {
-                return Err(exceptions::PyTypeError::new_err(format!("Value {} cannot fit in {} bits", self.to_string_formatted_default(), range.start)));
+                return Err(exceptions::PyTypeError::new_err(format!("Value {} cannot fit in {} bits", self.to_string_formatted_default(), range)));
             }
         }
 
@@ -236,7 +255,7 @@ impl BinaryBase {
     {
         let new_size = new_size as u64;
 
-        self.check_for_size(new_size..)?;
+        self.check_for_size(new_size)?;
 
         self.data.truncate(new_size);
         
@@ -335,17 +354,21 @@ impl BinaryBase {
 
     pub fn parse_bitvec_from_isize(object: isize, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
-        
         let sign_behevior = sign_behavior.unwrap_or(if object.is_negative() { "signed" } else { "unsigned"});
-        let bit_size_from_obj = match object { 
-                                        0          => 1,
-                                        isize::MIN => isize::BITS,
-                                        0..        => isize::BITS - object.leading_zeros(),
-                                        _          => isize::BITS - object.abs().leading_zeros() + 1,
-                                       }.try_into().unwrap();
-                                       
+
+        // beautiful match                                  __ chad edge case handling
+        let bit_size_from_obj = match object { //   /                                     ____________________ counting leading_zeros in unsigned values
+                                        0 /*______________/           */ => 0,           //     /
+                                        isize::MIN  /* __/            */ => isize::BITS, //    / 
+                                        (1..) if sign_behevior!="signed" => isize::BITS - object.leading_zeros(),
+                                        (1..) if sign_behevior=="signed" => isize::BITS - object.leading_zeros() + 1, // <---- extra space for sign bit
+                                        _                                => isize::BITS - object.abs().leading_zeros() + if object.unsigned_abs().is_power_of_two() { 0 } else { 1 },
+                                       }.try_into().unwrap();  //                                                        \
+                                                               //                                                         \_______ correcion for negative values that can fit in less bits
+                                                               //                                                                  negative powers of two requires less bits than others
         let bit_lenght = bit_size.unwrap_or(bit_size_from_obj);
-        
+ 
+                
         // safty: isize -> usize have same size and all values of usize are valid in isize
         let transmutated = unsafe { transmute::<_, usize>(object) };
         
@@ -354,6 +377,10 @@ impl BinaryBase {
         bitvec.push_block((transmutated >> 32) as u32); // higer half (if usize is 64 bits, otherwise 0 is pushed so it has no effect on the result)
 
         let mut binary = Self { data: bitvec, sign_behavior: sign_behevior.to_string() };
+        
+        if bit_lenght < bit_size_from_obj{
+            return Err(exceptions::PyTypeError::new_err(format!("Value {} cannot fit in {} bits", binary.to_string_formatted_default(), bit_lenght))); 
+        }
 
         binary.resize_constrained(bit_lenght)?;
 
