@@ -200,30 +200,6 @@ class Binary:
             >>> Binary(-1, signed=True, lenght=1)  # lenght will be 1, displayed as '1'
             >>> Binary(-1, signed=True, lenght=2)  # lenght will be 2, displayed as '11'
             >>> Binary(1,  signed=True          )  # lenght will be 2, displayed as '01'
-
-            This behavior is based on the interpretation of the number as a signed integer where sign bit is treated as it has negative weight
-            ```txt
-            for unsigned:
-
-            0 0 0 0
-             \\ \\ \\ \\_ weight 1
-              \\ \\ \\__ weight 2
-               \\ \\___ weight 4
-                \\____ weight 8
-            Value = sum of weights of bits set to 1
-            ```
-
-            ```txt
-            for signed:
-                
-            0 0 0 0
-             \\ \\ \\ \\_ weight 1
-              \\ \\ \\__ weight 2
-               \\ \\___ weight 4
-                \\____ weight -8
-            Value = sum of weights of bits set to 1
-            ```
-            And zero-lenght number just fills up the pattern.
         """
         ...
 
