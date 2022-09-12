@@ -8,11 +8,13 @@ It is:
 * Simpler to manipulate bits than with native python ints
 * Able to correctly wrap numbers in arithmetic operations
 * Emulate behavior of unsigned, signed integers
+* Unit-tested 
 * Written in Rust
+
 
 # Unittests
 ```
-python -m unittest src\pybytes\tests\binary_test.py
+python -m unittest python\tests\tests.py
 ```
 
 Example use:
@@ -45,3 +47,256 @@ x[:3] = "010"
 # '0010'
 print(x) 
 ```
+
+# Brief docs
+
+## Binary
+Class that represent numbers in binary. Wraps arithmetic to bouds of the binary number, 
+allows for quick and easy bit manipulation.
+### Parameters
+* object - Any object that can be somehow converted to binary number. 
+Including its representation as string, int, boolean, list of boolean-convertable values, byte-arrays, numpy arrays ect.
+* lenght - Target lenght of the number in bits. This number can be inferred from object based on its value, extra zeros ect
+* bytes_lenght - Target lenght of the number in bytes. Same as lenght but in bytes.
+* sign_behavior - How number should implement sign.
+## Examples
+
+```py
+>>> from pybytes import Binary
+>>> Binary("0110") # From string representing binary number. Following zeros are used to inherit len of number.
+'0110'
+>>> Binary(4, lenght=8) # Crate number with 8 bits, 4 is converted to binary and padded with zeros.
+'00000100'
+>>> Binary(255)
+'11111111'
+>>> Binary([True, 0, 1, 1.0]) # From array of boolean-likes
+'1011'
+>>> Binary("0000 0001") # Ignores whitespace
+'00000001'
+>>> Binary("ff Aa C   C") # Works with hex too
+'11111111 10101010 11001100'
+```
+
+## Alias
+Module defines factories with predefined sizes and behaviors like u8, u16, i16, i64 ect. These ones can be used as followed:
+```py
+>>> from pybytes.alias import u8
+>>> u8(3)
+'00000011'
+```
+### Conversion
+```py
+>>> num = Binary("FA") # 11111010
+```
+To string (formatted binary)
+```py
+>>> str(num) # Returns just bits
+'11111010'
+>>> bin(num)
+'0b11111010'
+>>> num.bin()
+'0b11111010'
+>>> num.bin(prefix=False) # remove prefix 
+'11111010'
+>>> hex(num)
+'fa'
+>>> num.hex()
+'0xfa'
+>>> num.hex(prefx=False)
+'fa'
+```
+```py
+>>> int(num)
+250
+>>> num.int()
+250
+```
+
+To boolean (`False` when `0`)
+```py
+>>> bool(num)
+True
+```
+
+## Indexing and Access
+### Index
+Bits of the number can be accessed throught index:
+```py
+>>> num = Binary("FA") # 11111010
+>>> num[0], num[1], num[2] # First 3 bits of the number
+(False, True, False)
+>>> num[-1] # Last bit
+True
+```
+
+### Slice
+```py
+>>> num[:3] # from start to 3th bit (first 3 bits)
+'010'
+>>> num[-6:] # from 6th bit from the end to start (last 6 bits)
+'111110'
+>>> num[-6:-2] # From 6th bit from end to 2th bit from end
+'1110'
+>>> num[2:] # Skip first 2 bits
+'111110'
+```
+*NOTE* that behavior of slicing is slighty diffrent from slicing pythons `str` or list, first bit is from far right, not left.
+
+## Public Methods
+### Aliases for slicing number
+* `high_byte`
+* `low_byte`
+* `extended_low`
+* `extended_high`
+* `get_byte`
+### Information about number
+* `sign_behavior`
+* `maximal_value`
+* `minimal_value`
+* `leading_zeros`
+* `trailing_zeros`
+* `is_negative`
+* `sign_extending_bit`
+* `hex`
+* `bin`
+* `int`
+### Modifying
+* `append`
+* `prepend`
+* `strip`
+* `strip_right`
+### Iterating
+* `bits`
+* `bytes`
+* `iter`
+
+### Modify by Index
+You can modify bits with indexes:
+```py
+>>> num = Binary(0, lenght=8)
+>>> num[0] = True # Set first bit to high
+>>> num[1] = True # Set second bit to high
+>>> num
+'00000011'
+>>> num[-1] = True # Set last bit to high
+>>> num
+'10000011'
+>>> num[0] = 0 # Set first bit to low
+>>> num
+'10000010'
+```
+
+### Modify by Slice
+You can select bits by slice and set them, or copy from other number
+```py
+>>> num = Binary(0, lenght=8)
+>>> num[:3] = True
+>>> num
+'00000111'
+>>> num[:3] = "101" # Insert 101 in place of first 3 bits of the number
+>>> num
+'00000101'
+>>> num[5:8] = "111" # insert 111 in place of bits 5th 6th 7th
+>>> num
+'11100101'
+>>> num[:] = 0 # Set all bits to 0
+>>> num
+'00000000'
+```
+
+There is few rules
+* If right side of the slice is convertable to Binary, it will be converted to binary and inserted in place of the selected bits.
+* If size of the converted value will be greater than size of the selected bits, it will throw an error.
+* If right side is boolean the assigment will set all selectet bits to this value.
+* step value is not supported.
+
+## Iterating over bits or chunks
+You can iterate over bits of the number:
+```py
+>>> num = Binary("FA") # 11111010
+>>> for bit in num: # or num.bits()
+...     print(bit, end=" ")
+False True True True True False True False
+```
+
+Or over bytes:
+```py
+>>> num = Binary("FA") # 11111010
+>>> for byte in num.bytes():
+...     print(byte, end=" ")
+11111010
+```
+Or over any other chunk of bits with `iter` function. For more sophisticated iteration you can use `itertools` or just play with indexing and slicing.
+
+## Arithmetic  
+In module `arithm` there are functions that can be used to perform arithmetic/logical operations on binary numbers. That's includes
+* Addition - `wrapping_add` and others
+* Subtraction - `wrapping_sub` and others
+* Multiplication - `wrapping_mul` and others
+* Shifts - `overflowing_lsh`, `wrapping_rsh` and others
+* Bitwise operations - `bitwise_and`, `bitwise_or` and others
+* Casting & Conversions - `cast`, `pad_zeros` and others
+
+Import this submodule and check all of them!
+
+```py
+>>> from pybytes import arithm
+>>> arithm.wrapping_add("1111", "0001") 
+'0000' # 15 + 1 = 16, but we have only 4 bits, so we wrap around and get 0
+>>> arithm.overflowing_add("1111", "0001")
+('0000', True) # If you want to know if there was overflow, use overflowing_add
+>>> arithm.overflowing_lsh(u8('0100 1010'), 2)
+('00101000', '01') # 0100 1010 << 2 = 0010 1000, but we have only 8 bits, so we wrap around to get 0010 1000, and we have 2 'wrapped' bits from left, so we return them as second value
+```
+Some functions are implemented for Binary class (usually wrapping ones), so you can use them directly with operators number:
+
+```py
+>>> u8("0100 1010") + u8("0000 0010")
+'0100 1100'
+```
+That includes:
+* `__add__`, `__sub__`, `__mul__`, `__lshift__`, `__rshift__`, `__and__`, `__or__`, `__xor__`, `__invert__`, `__neg__`
+
+## Creating numbers - details 
+* If you didn't specify lenght, it will be calculated from value
+    * For string it will be lenght of string including leading zeros/ones
+    * For int it will be minimal lenght of binary representation of the number
+* If you specify lenght, it will be used but if value is longer, it will raise an error
+
+This module assumes that for `signed` numbers the most significant bit is sign bit. So for signed number with lenght of `1` (so we have `only` sign_bit that has weight equal to `-1`) possible values will be `0` and `-1`
+Numbers with lenght of `0` will be always treated as `0`
+### Examples
+```py
+>>> Binary(0                        )  # lenght will be 0, displayed as ''
+>>> Binary(0,               lenght=1)  # lenght will be 1, displayed as '0'
+>>> Binary(0,               lenght=2)  # lenght will be 2, displayed as '00'
+>>> Binary(0,  signed=True          )  # lenght will be 0, displayed as '0'
+>>> Binary(0,  signed=True, lenght=1)  # lenght will be 1, displayed as '0'
+>>> Binary(-1, signed=True, lenght=1)  # lenght will be 1, displayed as '1'
+>>> Binary(-1, signed=True, lenght=2)  # lenght will be 2, displayed as '11'
+>>> Binary(1,  signed=True          )  # lenght will be 2, displayed as '01'
+```
+
+This behavior is based on the interpretation of the number as a signed integer where sign bit is treated as it has negative weight
+```txt
+for unsigned:
+
+0 0 0 0
+ \ \ \ \_ weight 1
+  \ \ \__ weight 2
+   \ \___ weight 4
+    \____ weight 8
+Value = sum of weights of bits set to 1
+```
+
+```txt
+for signed:
+    
+0 0 0 0
+ \ \ \ \_ weight  1
+  \ \ \__ weight  2
+   \ \___ weight  4
+    \____ weight -8
+Value = sum of weights of bits set to 1
+```
+And zero-lenght number just fills up the pattern well.
