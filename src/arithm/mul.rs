@@ -10,7 +10,6 @@ pub mod base_mul {
         let b_py_int = b.int()?;
 
         let (sign_behavior, size) = match (a.sign_behavior().as_str(), b.sign_behavior().as_str()) {
-            ("signed", "signed")          => ("signed",   a.len() + b.len() - 1),
             ("signed", _) | (_, "signed") => ("signed",   a.len() + b.len()),
             _                             => ("unsigned", a.len() + b.len()),
         };

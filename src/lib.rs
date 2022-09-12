@@ -234,12 +234,14 @@ impl Binary
 
     #[getter]
     pub fn _data(&self) -> PyObject {
-        use bv::{BitsExt};
-        let mut bytes  = if self.sign_behavior() == "unsigned" { 
-            self.inner.data.bit_concat(bv::BitVec::new()).to_bit_vec().into_boxed_slice()  // for unsigned mask bitvec
-        } else { 
-            self.inner.data.clone().into_boxed_slice() // for signed do not mask bitvec
-        };
+        let mut bytes  = self.inner
+        .get_slice(
+            &types::PySliceIndices::new(0, 
+                                        self.len().next_multiple_of(u32::BITS.try_into().unwrap()) as isize,
+                                        1))
+        .unwrap()
+        .into_boxed_slice(); // for signed mask bitvec
+    
         let (_, bytes, _) = unsafe { bytes.align_to_mut::<u8>() };
 
         Python::with_gil(|py| types::PyBytes::new(py, bytes).to_object(py))
