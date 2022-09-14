@@ -99,7 +99,7 @@ To string (formatted binary)
 >>> num.bin(prefix=False) # remove prefix 
 '11111010'
 >>> hex(num)
-'fa'
+'0xfa'
 >>> num.hex()
 '0xfa'
 >>> num.hex(prefx=False)
