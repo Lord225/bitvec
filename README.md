@@ -241,9 +241,9 @@ Import this submodule and check all of them!
 
 ```py
 >>> from pybytes import arithm
->>> arithm.wrapping_add("1111", "0001") 
+>>> arithm.wrapping_add(u4("1111"), "0001") 
 '0000' # 15 + 1 = 16, but we have only 4 bits, so we wrap around and get 0
->>> arithm.overflowing_add("1111", "0001")
+>>> arithm.overflowing_add(u4("1111"), "0001")
 ('0000', True) # If you want to know if there was overflow, use overflowing_add
 >>> arithm.overflowing_lsh(u8('0100 1010'), 2)
 ('00101000', '01') # 0100 1010 << 2 = 0010 1000, but we have only 8 bits, so we wrap around to get 0010 1000, and we have 2 'wrapped' bits from left, so we return them as second value
