@@ -99,7 +99,7 @@ To string (formatted binary)
 >>> num.bin(prefix=False) # remove prefix 
 '11111010'
 >>> hex(num)
-'fa'
+'0xfa'
 >>> num.hex()
 '0xfa'
 >>> num.hex(prefx=False)
@@ -133,42 +133,42 @@ True
 ```py
 >>> num[:3] # from start to 3th bit (first 3 bits)
 '010'
->>> num[-6:] # from 6th bit from the end to start (last 6 bits)
+>>> num[-6:] # from 6th bit from the end to end (last 6 bits)
 '111110'
->>> num[-6:-2] # From 6th bit from end to 2th bit from end
+>>> num[-6:-2] # From 6th bit from end to 2st bit from end
 '1110'
 >>> num[2:] # Skip first 2 bits
 '111110'
+>>> num[:16] # First 16 bits (padded with zeros)
+'00000000 11111010'
 ```
-*NOTE* that behavior of slicing is slighty diffrent from slicing pythons `str` or list, first bit is from far right, not left.
+*NOTE* that behavior of slicing is slighty diffrent from slicing pythons `str` or list, first bit is from far right, not left. You can also exeed len of the value, in this case added bits will be padded with sign extending bit (`0` for unsigned, `sign_bit` for singed)
 
 ## Public Methods
 ### Aliases for slicing number
-* `high_byte`
-* `low_byte`
-* `extended_low`
-* `extended_high`
-* `get_byte`
+* `high_byte()` - second 8bits (from 8th to 16th)
+* `low_byte()` - first 8bits (from start to 8th)
+* `extended_low()` - first 16bits
+* `extended_high()` - second 16bits
+* `get_byte(index: int)` - nth group of 8-bit chunks.
 ### Information about number
-* `sign_behavior`
-* `maximal_value`
-* `minimal_value`
-* `leading_zeros`
-* `trailing_zeros`
-* `is_negative`
-* `sign_extending_bit`
-* `hex`
-* `bin`
-* `int`
+* `sign_behavior()` - The way that number behaves on extending and converstions `signed` or `unsigned` 
+* `maximal_value()` - Maximal possibe value than can be hold in this representation and lenght
+* `minimal_value()` - Minimal possibe value than can be hold in this representation and lenght
+* `leading_zeros()` - Amount of leading zeros in the number
+* `trailing_zeros()` - Amount of trailing zeros in the number
+* `is_negative()` - Returns if number is negative
+* `sign_extending_bit()` - Returns the boolean that will be used to extend this value to left 
+* `hex(prefix: bool=True)` - hex representation of this number
+* `bin(prefix: bool=True)`- bin representation of this number
+* `int()` - casted to python integer 
 ### Modifying
-* `append`
-* `prepend`
-* `strip`
-* `strip_right`
+* `append(Binary|bool|str|int)` - Appends value to the end
+* `prepend(Binary|bool|str|int)` - Appends vakue to the start 
 ### Iterating
-* `bits`
-* `bytes`
-* `iter`
+* `bits()` - iterates over bits
+* `bytes()` - iterates over bytes
+* `iter()` - iterates over chunks or n bits 
 
 ### Modify by Index
 You can modify bits with indexes:
@@ -216,7 +216,7 @@ You can iterate over bits of the number:
 >>> num = Binary("FA") # 11111010
 >>> for bit in num: # or num.bits()
 ...     print(bit, end=" ")
-False True True True True False True False
+True True True True True False True False
 ```
 
 Or over bytes:
@@ -241,9 +241,9 @@ Import this submodule and check all of them!
 
 ```py
 >>> from pybytes import arithm
->>> arithm.wrapping_add("1111", "0001") 
+>>> arithm.wrapping_add(u4("1111"), "0001") 
 '0000' # 15 + 1 = 16, but we have only 4 bits, so we wrap around and get 0
->>> arithm.overflowing_add("1111", "0001")
+>>> arithm.overflowing_add(u4("1111"), "0001")
 ('0000', True) # If you want to know if there was overflow, use overflowing_add
 >>> arithm.overflowing_lsh(u8('0100 1010'), 2)
 ('00101000', '01') # 0100 1010 << 2 = 0010 1000, but we have only 8 bits, so we wrap around to get 0010 1000, and we have 2 'wrapped' bits from left, so we return them as second value
