@@ -299,4 +299,14 @@ for signed:
     \____ weight -8
 Value = sum of weights of bits set to 1
 ```
+
+```txt
+for size 1
+unsigned:
+0
+ \_ weight 1
+signed:
+0
+ \_ weight -1 (last bit)
+```
 And zero-lenght number just fills up the pattern well.
