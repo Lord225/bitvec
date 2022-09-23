@@ -456,6 +456,20 @@ class Binary:
         '0000'
         """
         ...
+    def __rshift__(self, other: Any) -> Binary:
+        """
+        Performs wrapping bitwise right shift operation (alias to `arithm.wrapping_rsh()`)
+        >>> Binary("0001") >> 1
+        '0000'
+        """
+        ...
+    def __lshift__(self, other: Any) -> Binary:
+        """
+        Performs wrapping bitwise left shift operation (alias to `arithm.arithmetic_wrapping_lsh()`)
+        >>> Binary("0001") << 1
+        '0010'
+        """
+        ...    
     def __invert__(self) -> Binary:
         """
         Performs bitwise not operation

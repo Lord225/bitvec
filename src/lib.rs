@@ -115,6 +115,9 @@ impl Binary
     {
         Self::wrap(inner).and_then(|binary| Ok(binary.into_py(*py)))
     }
+    pub fn wrap_self(self) -> PyResult<PyObject> {
+        Python::with_gil(|py| Ok(self.into_py(py)))
+    }
 
     pub fn unwrap(&self) -> &binary::BinaryBase
     {
@@ -221,8 +224,8 @@ impl Binary
             (None, None, None) => None,
             (Some(sign_behavior), None, None) => Some(sign_behavior),
             (None, Some(sign_behavior), None) => Some(sign_behavior),
-            (None, Some(_), Some(true)) => Some("signed"),
-            (None, Some(_), Some(false)) => Some("unsigned"),
+            (None, None, Some(true)) => Some("signed"),
+            (None, None, Some(false)) => Some("unsigned"),
             _ => {
                 return Err(exceptions::PyTypeError::new_err(format!("Provided more than one sign_behavior")));
             }
@@ -267,6 +270,15 @@ impl Binary
     pub fn sign_extending_bit(&self) -> bool {
         return self.inner.sign_extending_bit()
     }
+    ///
+    /// Calculated with python using equivalent code:
+    /// ```python
+    /// if self.sign_behavior() == "unsigned":
+    ///     retrun 2**self.len() - 1
+    /// else:
+    ///     return 2**(self.len() - 1) - 1
+    /// ```
+    /// 
     pub fn maximum_value(&self) -> PyResult<PyObject> {
         Python::with_gil(|py| {
             if self.len() == 0 {
@@ -285,6 +297,14 @@ impl Binary
             }
         })
     }
+    /// 
+    /// Calculated with python using equivalent code:
+    /// ```python
+    /// if self.sign_behavior() == "unsigned":
+    ///    retrun 0
+    /// else:
+    ///   return -2**(self.len() - 1)
+    /// 
     pub fn minimum_value(&self) -> PyResult<PyObject> {
         Python::with_gil(|py| {
             if self.len() == 0 {
@@ -346,14 +366,24 @@ impl Binary
         Ok(())
     }
     
+    /// Returns represenation in hex (with or without prefix depeding on args)
+    /// `kwargs` -> prefix
+    /// `args` -> 1st argument - boolean
+    /// 
     #[args(args = "*", kwargs = "**")]
     pub fn hex(&self, args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> String {
         self.inner.to_string_hex(Self::parse_prefix_kwargs_args(args, kwargs))
     }
+    /// Returns represenation in binary (with or without prefix depeding on args)
+    /// `kwargs` -> prefix
+    /// `args` -> 1st argument - boolean
+    /// 
     #[args(args = "*", kwargs = "**")]
     pub fn bin(&self, args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> String {
         self.inner.to_string_bin(Self::parse_prefix_kwargs_args(args, kwargs))
     }
+    /// Returns Python int
+    /// Translates raw bytes into Python int
     pub fn int(&self) -> PyResult<PyObject> {
         Python::with_gil(|py| {
             let python_int: PyObject = 0.into_py(py);
@@ -361,6 +391,8 @@ impl Binary
             python_int.call_method(py, "from_bytes", (self._data(), "little"), Some(vec![("signed", self.sign_behavior() == "signed")].into_py_dict(py)))
         }) // from_bytes(self._data, "big", {"signed": self.sign_behavior() == "signed"})
     }
+    
+    // Aliases
 
     pub fn __int__(&self) -> PyResult<PyObject> {
         self.int()
@@ -389,7 +421,6 @@ impl Binary
     pub fn __add__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
         arithm::add::wrapping_add(_self, other)
     }
-
     pub fn __sub__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
         arithm::sub::wrapping_sub(_self, other)
     }
@@ -428,6 +459,12 @@ impl Binary
                 arithm::bitwise::bitwise_xor(_self, pyref)
             })
         }
+    }
+    pub fn __rshift__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
+        arithm::shifts::arithmetic_wrapping_rsh(&_self, other)?.wrap_self()
+    }
+    pub fn __lshift__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
+        arithm::shifts::wrapping_lsh(&_self, other)?.wrap_self()
     }
 
 

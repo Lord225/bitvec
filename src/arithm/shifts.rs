@@ -18,7 +18,6 @@ mod shifts_base
         // 1010 << 2  ->  1000
 
         let shift: i64 = _b.into();
-
         
         if shift < 0 
         {
@@ -27,20 +26,26 @@ mod shifts_base
         else 
         {
             let mut result = bv::BitVec::<u32>::with_capacity(_a.len());
-            
-            for _ in 0..shift {
+            let clamped_shift = shift.clamp(0, _a.len().try_into().unwrap());
+
+            for _ in 0..clamped_shift {
                 result.push(false);
             }
-            let size = _a.len() as i64 - shift;
+            let size = _a.len() as i64 - clamped_shift;
 
             for i in 0..size {
                 result.push(_a.data.get_bit(i as u64));
             }
             let carry_start = _a.len() as i64 - shift;
-            let carry_end = _a.len();
-
-            let carry = _a.get_slice(&PySliceIndices::new(carry_start.try_into().unwrap(), carry_end.try_into().unwrap(), 1))?;
-        
+            let carry_end = carry_start + shift;
+            
+            let carry = if carry_start >= 0 {
+                _a.get_slice(&PySliceIndices::new(carry_start.try_into().unwrap(), carry_end.try_into().unwrap(), 1))?
+            } else {
+                let mut c = _a.clone();
+                c.prepend_slice(&bv::BitVec::new_fill(false, carry_start.abs().try_into().unwrap()));
+                c.data
+            };
             Ok((BinaryBase::from_data(result), BinaryBase::from_data(carry)))
         }
     }
@@ -63,13 +68,14 @@ mod shifts_base
         else 
         {
             let mut result = bv::BitVec::<u32>::with_capacity(_a.len());
+            let clamped_shift = shift.clamp(0, _a.len().try_into().unwrap());
             let len = _a.len() as i64;
             
-            for i in shift..len {
+            for i in clamped_shift..len {
                 result.push(_a.data.get_bit(i as u64));
             }
 
-            for _ in 0..shift {
+            for _ in 0..clamped_shift {
                 result.push(false);
             }
 
@@ -100,14 +106,15 @@ mod shifts_base
         else 
         {
             let mut result = bv::BitVec::<u32>::with_capacity(_a.len());
+            let clamped_shift = shift.clamp(0, _a.len().try_into().unwrap());
             let len = _a.len() as i64;
             
-            for i in shift..len {
+            for i in clamped_shift..len {
                 result.push(_a.data.get_bit(i as u64));
             }
 
             let se = _a.sign_extending_bit();
-            for _ in 0..shift {
+            for _ in 0..clamped_shift {
                 result.push(se);
             }
 
