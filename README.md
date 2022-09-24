@@ -215,8 +215,8 @@ You can iterate over bits of the number:
 ```py
 >>> num = Binary("FA") # 11111010
 >>> for bit in num: # or num.bits()
-...     print(bit, end=" ")
-True True True True True False True False
+...     print(bit, end=" ")  # bit is Binary class with lenght equal to 1 
+0 1 0 1 1 1 1 1
 ```
 
 Or over bytes:
