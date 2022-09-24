@@ -4,7 +4,7 @@ pub mod sliceunpack;
 use std::mem::transmute;
 use std::ops::Range;
 
-use bv::{self, Bits, BitsPush, BitSlice, BitSliceable, BitsExt, BitSliceableMut, BitsMut };
+use bv::{self, Bits, BitsPush, BitSlice, BitSliceable, BitsExt, BitSliceableMut, BitsMut, BitVec };
 
 use pyo3::{prelude::*, PyResult, types, exceptions};
 use pyo3::types::IntoPyDict;
@@ -28,7 +28,7 @@ pub struct BinaryBase {
 pub struct BinaryRange {
     range: Range<u64>, // Range mapped onto the binary
     stop: u64,         // alternative to range.end, used for out-of-bounds indexing
-    step: u64,
+    step: u64,         // step size
 }
 
 impl BinaryRange
@@ -46,6 +46,7 @@ impl BinaryRange
             step,
         })
     }
+    /// Returns the range for BitVec indexing. It will return `end..end` If slice is outside of the binary.
     pub fn range(&self) -> Range<u64> 
     {
         if self.get_start() >= self.get_wrapped_end() {
@@ -55,18 +56,26 @@ impl BinaryRange
             self.range.clone()
         }
     }
-    pub fn len(&self) -> u64 {
+    pub fn real_len(&self) -> u64 {
         (self.stop - self.range.start) / self.step
     }
+    /// Real lenght of the slice
+    pub fn len(&self) -> u64 {
+        self.stop - self.range.start
+    }
+    /// Returns the step of the slice
     pub fn get_step(&self) -> u64 {
         self.step
     }
+    /// Returns the start of the slice
     pub fn get_wrapped_end(&self) -> u64 {
         self.range.end
     }
+    /// Returns native end of the slice (not wrapped)
     pub fn get_real_end(&self) -> u64 {
         self.stop
     }
+    /// Returns the start of the slice (not wrappend)
     pub fn get_start(&self) -> u64 {
         self.range.start
     }
@@ -91,6 +100,12 @@ impl BinaryBase {
 #[allow(dead_code)]
 impl BinaryBase
 {
+    /// Returns a string representation of the binary. And uses `high` and `low` as symbols for bit states
+    /// ```
+    /// use bv::BitVec;
+    /// let binary = BinaryBase::from_data(BitVec::from_bits(5)));
+    /// assert_eq!(binary.to_string_symbols('1', '0'), "101".to_string());
+    /// ```
     pub fn to_string_symbols(&self, high: char, low: char) -> String
     {
         if self.data.is_empty() {
@@ -104,7 +119,7 @@ impl BinaryBase
         }
         s
     }
-
+    /// Returns a string representation of the binary but bits are in reversed order. And uses `high` and `low` as symbols for bit states
     pub fn to_string_symbols_rev(&self, high: char, low: char) -> String
     {
         let mut s = String::new();
@@ -114,7 +129,7 @@ impl BinaryBase
         }
         s
     }
-
+    /// Returns a string representation of the binary in hex. Pads ramaining bits with zeros. if `prefix` is true adds `0x`
     pub fn to_string_hex(&self, prefix: bool) -> String
     {
         fn slice_to_u32(slice: &BitSlice<u32>) -> u32
@@ -150,14 +165,22 @@ impl BinaryBase
         }
         
     }
-
+    /// Returns a string representation of the binary in hex. Pads ramaining bits with zeros. if `prefix` is true adds `0x`
+    /// Uses `format` to pad bits in specified pattern. 
+    /// Function while iterating over bits will add coresponding character from `format.1` to the output string after every `format.0` 
+    /// bits and for next chunk it will use next item in collection
+    /// Example
+    /// ```rs
+    /// &[(2, '\''), (2, ' ')]
+    /// ```
+    /// With input string `1111000011110000` will produce `1111'0000 1111'0000`
     pub fn to_string_formatted(&self, format: &[(usize, char)], high: char, low: char, prefix: bool) -> String
     {
         // format: "4'4 "
         // output:
         // 0000'0000 0000'0000 
         let mut output = String::with_capacity(self.len_usize());
-
+        
         if format.len() == 0 {
             if prefix {
                 return format!("0b{}", &self.to_string_symbols(high, low))
@@ -188,11 +211,12 @@ impl BinaryBase
 
     }
 
+    /// Returns a string representation of the binary Using `1` to represend high state and `0` to represent low state, will not add any formatting
     pub fn to_string_bin(&self, prefix: bool) -> String
     {
         self.to_string_formatted(&[], '1', '0', prefix) 
     }
-
+    /// Returns a string representation of the binary Using `1` to represend high state and `0` to represent low state, will add spaces every 8th bit.
     pub fn to_string_formatted_default(&self) -> String
     {
         self.to_string_formatted(&[(8, ' ')], '1', '0', false)
@@ -273,6 +297,12 @@ impl BinaryBase {
 
     }
 
+    /// Crate a new BinaryBase object with specified size and sign behavior based on &str input (hex or bin representaion of the number)
+    /// trailing `0x` or `0b` will be ignored, trailing `0` will be used to determine `bit_size` if not provided. Characters `\t`, `\n`, ` ` will be ignored in input string and not counted towards `bit_size`
+    /// 
+    /// It can fail if:
+    /// * `bit_size` is provided and input value cannot fit in specified size
+    /// * String has invalid characters or radix
     pub fn parse_bitvec_from_str(object: &str, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         enum Prefix {
@@ -352,6 +382,12 @@ impl BinaryBase {
 
     }
 
+    /// Crate a new BinaryBase object with specified size and sign behavior based on integer input.
+    /// If `bit_size` is not provided, the smallest possible size will be used for giver signedness. (e.g. 0 will be 0 bit, 1 will be 1 bit, -1 will be 1 bits)
+    /// If `sign_behavior` is not provided it will be based on the sign of the input.
+    /// 
+    /// It can fail if:
+    /// * `bit_size` is provided and input value cannot fit in specified size
     pub fn parse_bitvec_from_isize(object: isize, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         let sign_behevior = sign_behavior.unwrap_or(if object.is_negative() { "signed" } else { "unsigned"});
@@ -387,11 +423,19 @@ impl BinaryBase {
         return Ok(binary);
     }
 
+    /// Crate a new BinaryBase object with specified size and sign behavior based on Python integer input. It behaves the same as `parse_bitvec_from_isize` but it accepts Arbitrary Sized Integers.
+    /// ```py
+    /// raw_bytes = object.to_bytes(size, "big", signed=True) # where size is the number of bytes in blocks that will be used (next multiple of 32) // 8) 
+    /// ```
+    /// It can fail if:
+    /// * `bit_size` is provided and input value cannot fit in specified size
+    /// * If python fails to call `bit_lenght` or `to_bytes` functions on integer
+    /// * If pyo3 fails to convert python `bytes` to `&[u8]
+    /// * If python has diffrent alighment for bytes than rust (unlikely)
     pub fn parse_bitvec_from_long_integer(object: &types::PyLong, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         let sign_behevior = sign_behavior.unwrap_or(if object.compare(0).is_ok_and(|x|x.is_lt()) { "signed" } else { "unsigned" });
         let bit_lenght = bit_size.unwrap_or(object.call_method0("bit_length")?.extract::<usize>()?);
-
 
         let mut bitvec = bv::BitVec::<u32>::with_capacity(bit_lenght.try_into().unwrap());
 
@@ -422,17 +466,17 @@ impl BinaryBase {
 
         return Ok(binary);
     }
-
+    // TODO
     pub fn parse_bitvec_from_float(object: f64, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         Self::parse_bitvec_from_isize(object as isize, bit_size, sign_behavior)
     }
 
+    /// Copy constructor
     pub fn parse_bitvec_from_copy(object: &BinaryBase, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         let bit_size = bit_size.unwrap_or(object.len_usize());
         let sign_behavior = sign_behavior.unwrap_or(&object.sign_behavior);
-        
 
         let mut binary = Self { data: object.data.clone(), sign_behavior: sign_behavior.to_string() };
         
@@ -441,6 +485,8 @@ impl BinaryBase {
         return Ok(binary);
     }
 
+    /// Takes raw bytes and uses them as bitvec data
+    /// 
     pub fn parse_bitvec_from_bytes(object: &types::PyBytes, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         let bit_size = bit_size.unwrap_or(object.len()?*8);
@@ -460,7 +506,8 @@ impl BinaryBase {
         
         return Ok(binary);
     }
-
+    /// Takes Python Iterator and uses it as bitvec data
+    /// 
     pub fn parse_bitvec_from_iterable(mut object: &types::PyIterator, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         let sign_behavior = sign_behavior.unwrap_or("unsigned");
@@ -483,7 +530,7 @@ impl BinaryBase {
 
         return Ok(binary);
     }
-
+    /// Constructior that wraps raw `BitVec` inside `BinaryBase`
     pub fn parse_bitvec_from_slice(object: bv::BitVec<u32>, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self> 
     {
         let sign_behavior = sign_behavior.unwrap_or("unsigned");
@@ -507,7 +554,7 @@ impl BinaryBase
         }
         return Ok(index);
     }
-
+    /// Flattening uses special value `i64::MAX` to represent `None` provied value in python (so it is assumed to be last index)
     fn flatten_index(&self, index: isize) -> usize
     {
         const INF_SYMBOL: isize = i64::MAX as _;
@@ -545,9 +592,12 @@ impl BinaryBase
         let slice = self.data.bit_slice(range.range()).to_bit_vec();
 
         // get padding bits for slice outside t
-        let padd = bv::BitVec::new_fill(self.sign_extending_bit(), (range.len() as i64 - slice.len() as i64).max(0) as u64);
+        let lenght = (range.len() as i64 - slice.len() as i64).max(0) as u64;
+        let padd = bv::BitVec::new_fill(self.sign_extending_bit(), lenght);
 
         let concated = slice.bit_concat(padd).to_bit_vec();
+
+        // todo step
 
         Ok(concated)
     }
@@ -571,6 +621,8 @@ impl BinaryBase
             return Err(exceptions::PyValueError::new_err(format!("Value and slice are in diffrent lenghts: {} > {}", slice.len(), value.len())));
         }
 
+        // todo step
+
         for i in 0..slice.bit_len()
         {
             if i >= value.bit_len() {
@@ -587,6 +639,8 @@ impl BinaryBase
 
         let mut slice = self.data.as_mut_slice().bit_slice_mut(range.range());
 
+        // todo step
+        
         for i in 0..slice.bit_len()
         {
             slice.set_bit(i, value);
@@ -606,6 +660,7 @@ impl BinaryBase
     }
     pub fn append_slice(&mut self, val: &bv::BitVec<u32>) 
     {
+        // brefly benchmarked: 
         // 0.3181476593017578s
         //self.data = self.data.bit_concat(val).to_bit_vec();
         

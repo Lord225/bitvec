@@ -106,7 +106,6 @@ impl Binary
     {
         inner.and_then(|inner| Ok( Binary { inner }))
     }
-
     pub fn wrap_object(inner: PyResult<binary::BinaryBase>) -> PyResult<PyObject>
     {
         Python::with_gil(|py| Self::wrap_object_gil(inner, &py))
@@ -118,7 +117,6 @@ impl Binary
     pub fn wrap_self(self) -> PyResult<PyObject> {
         Python::with_gil(|py| Ok(self.into_py(py)))
     }
-
     pub fn unwrap(&self) -> &binary::BinaryBase
     {
         &self.inner
@@ -175,7 +173,10 @@ impl Binary
 {
     fn cmp(&self, obj: &PyAny) -> PyResult<Ordering>
     {
-        // extract binary or crate new from object
+        // prioritize:
+        // 1 Casting to Binary
+        // 2 Creating other with same Lenght as self
+        // 3 Creating a new Binary without constrains
         if let Ok(bin) = obj.extract::<PyRef<Binary>>() { 
             cmp::cmp(&self, &bin)
         } else if let Ok( bin) = Self::from(obj, Some(self.len()), Some(self.sign_behavior())) {
@@ -340,6 +341,10 @@ impl Binary
     }
 
     pub fn append(&mut self, obj: &PyAny) -> PyResult<()> {
+        // prioritize:
+        // 1 Casting to Binary
+        // 2 Casting to bool
+        // 3 Creating a new Binary
 
         if let Ok(bin) = obj.extract::<PyRef<Binary>>() { 
             self.inner.append_slice(&bin.inner.data);
@@ -353,7 +358,6 @@ impl Binary
         Ok(())
     }
     pub fn prepend(&mut self, obj: &PyAny) -> PyResult<()> {
-
         if let Ok(bin) = obj.extract::<PyRef<Binary>>() { 
             self.inner.prepend_slice(&bin.inner.data);
         } else if let Ok(bin) = obj.extract::<bool>() { 
@@ -425,6 +429,9 @@ impl Binary
         arithm::sub::wrapping_sub(_self, other)
     }
     pub fn __and__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
+        // prioritize:
+        // 1 Casting to Binary
+        // 2 Creating new Binary
         if let Ok(other) = other.extract::<PyRef<Binary>>() {
             arithm::bitwise::bitwise_and(_self, other)
         } else {
@@ -552,12 +559,14 @@ impl Binary
     pub fn __getitem__(&self, index: &PyAny) -> PyResult<PyObject> {
         use binary::sliceunpack::PySliceUnpack;
 
+        // index
         if let Ok(index) = index.extract::<isize>() {
             let bit = self.inner.get_bit(index)?;
 
             return Ok(Python::with_gil(|py| bit.into_py(py)));
         }
 
+        // slice
         if let Ok(slice) = index.extract::<&types::PySlice>() {
             return Ok(self.slice(&slice.unpack()?)?);
         }
@@ -567,6 +576,7 @@ impl Binary
     pub fn __setitem__(&mut self, index: &PyAny, value: &PyAny) -> PyResult<()> {
         use binary::sliceunpack::PySliceUnpack;
 
+        // index
         if let Ok(index) = index.extract::<isize>() {
             if let Ok(value) = value.extract::<bool>() {
                 self.inner.set_bit(index, value)?;
@@ -575,7 +585,8 @@ impl Binary
                 return Err(exceptions::PyTypeError::new_err(format!("Value {} cannot be converted to bool", value)));
             }
         }
-
+        
+        // slice
         if let Ok(slice) = index.extract::<&types::PySlice>() {
             let slice = &slice.unpack()?;
             let range = self.inner.slice_to_range(&slice)?;
