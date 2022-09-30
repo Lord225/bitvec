@@ -215,16 +215,15 @@ You can iterate over bits of the number:
 ```py
 >>> num = Binary("FA") # 11111010
 >>> for bit in num: # or num.bits()
-...     print(bit, end=" ")
-True True True True True False True False
+...     print(bit, end=" ")  # bit is Binary class with lenght equal to 1 
+0 1 0 1 1 1 1 1
 ```
 
 Or over bytes:
 ```py
 >>> num = Binary("FA") # 11111010
->>> for byte in num.bytes():
-...     print(byte, end=" ")
-11111010
+>>> list(num.extended_low().bytes())
+[11111010, 00000000] 
 ```
 Or over any other chunk of bits with `iter` function. For more sophisticated iteration you can use `itertools` or just play with indexing and slicing.
 
