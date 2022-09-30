@@ -1,7 +1,8 @@
 #![feature(is_some_with)]
 #![feature(int_roundings)]
+#![feature(type_alias_impl_trait)]
 #![feature(bigint_helper_methods)]
-#![feature(decl_macro)]
+
 
 use std::cmp::Ordering;
 
@@ -151,6 +152,9 @@ impl Binary
         // from float
         if let Ok(object) = object.extract::<f64>() {
             return Self::wrap(binary::BinaryBase::parse_bitvec_from_float(object, bit_size, sign_behavior));
+        }
+        if object.is_none() {
+            return Self::wrap(binary::BinaryBase::parse_bitvec_from_isize(0, bit_size, sign_behavior));
         }
         
         return Err(exceptions::PyTypeError::new_err(format!("Unsupported type: {}", object)));
@@ -473,8 +477,6 @@ impl Binary
     pub fn __lshift__(_self: PyRef<'_, Self>, other: &PyAny) -> PyResult<PyObject>{
         arithm::shifts::wrapping_lsh(&_self, other)?.wrap_self()
     }
-
-
     pub fn __neg__(_self: PyRef<'_, Self>) -> PyResult<PyObject>{
         arithm::add::arithmetic_neg(_self)
     }

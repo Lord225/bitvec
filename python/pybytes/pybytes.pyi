@@ -78,6 +78,8 @@ class Binary:
             '1110'
             >>> num[2:] # Skip first 2 bits
             '111110'
+            >>> num[::2] # Every second bit
+            '0011'
             *NOTE* that behavior of slicing is slighty diffrent from slicing pythons `str` or list, first bit is from far right, not left.
             
             ## Public Methods
@@ -120,6 +122,9 @@ class Binary:
             >>> num[0] = 0 # Set first bit to low
             >>> num
             '10000010'
+            >>> num[::2] = True # Set every second bit to high
+            >>> num
+            '11010111'
             
             ### Modyfy by Slice
             You can select bits by slice and set them, or copy from other number
@@ -140,8 +145,6 @@ class Binary:
             * If right side of the slice is convertable to Binary, it will be converted to binary and inserted in place of the selected bits.
             * If size of the converted value will be greater than size of the selected bits, it will throw an error.
             * If right side is boolean the assigment will set all selectet bits to this value.
-            * step value is not supported.
-
             ## Iterating
             You can iterate over bits of the number:
             >>> num = Binary("FA") # 11111010
@@ -410,7 +413,7 @@ class Binary:
         * `bytes` - iterates over bytes `iter(8)`
         * `__iter__` - iterates over bits `iter(1)`
 
-        If you need more control use `itertools` module
+        If you need more control you can combine this function with slicing or use `itertools` module
         """
         ...
 

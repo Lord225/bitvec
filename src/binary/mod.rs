@@ -4,7 +4,7 @@ pub mod sliceunpack;
 use std::mem::transmute;
 use std::ops::Range;
 
-use bv::{self, Bits, BitsPush, BitSlice, BitSliceable, BitsExt, BitSliceableMut, BitsMut, BitVec };
+use bv::{self, Bits, BitsPush, BitSlice, BitSliceable, BitsExt, BitSliceableMut, BitsMut };
 
 use pyo3::{prelude::*, PyResult, types, exceptions};
 use pyo3::types::IntoPyDict;
@@ -28,12 +28,12 @@ pub struct BinaryBase {
 pub struct BinaryRange {
     range: Range<u64>, // Range mapped onto the binary
     stop: u64,         // alternative to range.end, used for out-of-bounds indexing
-    step: u64,         // step size
+    step: isize,         // step size
 }
 
 impl BinaryRange
 {
-    pub fn new(start: u64, stop: u64, step: u64, len: u64) -> PyResult<BinaryRange> {
+    pub fn new(start: u64, stop: u64, step: isize, len: u64) -> PyResult<BinaryRange> {
         let wrapped_stop = stop.min(len);
 
         if stop < start {
@@ -56,15 +56,12 @@ impl BinaryRange
             self.range.clone()
         }
     }
-    pub fn real_len(&self) -> u64 {
-        (self.stop - self.range.start) / self.step
-    }
     /// Real lenght of the slice
     pub fn len(&self) -> u64 {
         self.stop - self.range.start
     }
     /// Returns the step of the slice
-    pub fn get_step(&self) -> u64 {
+    pub fn get_step(&self) -> isize {
         self.step
     }
     /// Returns the start of the slice
@@ -557,11 +554,13 @@ impl BinaryBase
     /// Flattening uses special value `i64::MAX` to represent `None` provied value in python (so it is assumed to be last index)
     fn flatten_index(&self, index: isize) -> usize
     {
-        const INF_SYMBOL: isize = i64::MAX as _;
+        const INF_SYMBOL_HIG_BOUND: isize = i64::MAX as _;
+        const INF_SYMBOL_LOW_BOUND: isize = i64::MIN as _;
 
         match index
         {
-            INF_SYMBOL => self.len_usize(), // default value, if index was provided as None in python
+            INF_SYMBOL_HIG_BOUND => self.len_usize(), // default value, if index was provided as None in python
+            INF_SYMBOL_LOW_BOUND => 0,                // If Python decided to use i64::MIN as None in lower bound of slice
             0..               => index as usize,
             _                 => (self.len() as isize + index) as usize,
         }
@@ -570,9 +569,15 @@ impl BinaryBase
     pub fn slice_to_range(&self, slice: &types::PySliceIndices) -> PyResult<BinaryRange> {
         let start: u64 = self.flatten_index(slice.start).try_into().unwrap();
         let stop: u64  = self.flatten_index(slice.stop).try_into().unwrap();
-        let step: u64  = slice.step.try_into().unwrap();
+        let step       = slice.step;
 
-        BinaryRange::new(start, stop, step, self.len())
+
+        // Handle this stupid python's edge case where for negative step
+        if step < 0 {
+            BinaryRange::new(stop, start, step, self.len())
+        } else{
+            BinaryRange::new(start, stop, step, self.len())
+        }
     }
 
 
@@ -586,20 +591,39 @@ impl BinaryBase
         }
     }
     pub fn get_slice(&self, slice: &types::PySliceIndices) -> PyResult<bv::BitVec<u32>> {
+        use reduce::*;
+        
         let range = self.slice_to_range(slice)?;
 
         // get data from range
-        let slice = self.data.bit_slice(range.range()).to_bit_vec();
+        let slice = self.data.bit_slice(range.range());
 
         // get padding bits for slice outside t
         let lenght = (range.len() as i64 - slice.len() as i64).max(0) as u64;
         let padd = bv::BitVec::new_fill(self.sign_extending_bit(), lenght);
 
-        let concated = slice.bit_concat(padd).to_bit_vec();
+        let concated = slice.bit_concat(padd);
+    
+        let out = match range.step {
+            0   => Err(exceptions::PyIndexError::new_err(format!("Step equal zero"))),
+            1   => Ok(concated.to_bit_vec()), // optimalization for most common case
+            0.. => {
+                let mut out = bv::BitVec::<u32>::with_capacity(concated.bit_len()/range.step as u64);
+                for bit in IterableBitSlice(&concated).into_iter().step_by(range.step.try_into().unwrap()) {
+                    out.push(bit);
+                }
+                Ok(out)
+            },
+            _ => {
+                let mut out = bv::BitVec::<u32>::with_capacity(concated.bit_len()/range.step as u64);
+                for bit in IterableBitSlice(&concated).into_iter().rev().step_by(range.step.abs().try_into().unwrap()) {
+                    out.push(bit);
+                }
+                Ok(out)
+            }  
+        }?;
 
-        // todo step
-
-        Ok(concated)
+        Ok(out)
     }
 
     pub fn get_indices(&self, _slice: &types::PyIterator) -> PyResult<bv::BitVec<u32>> {
@@ -621,14 +645,29 @@ impl BinaryBase
             return Err(exceptions::PyValueError::new_err(format!("Value and slice are in diffrent lenghts: {} > {}", slice.len(), value.len())));
         }
 
-        // todo step
+        if range.step > 0 {
+            let mut val_index = 0;
 
-        for i in 0..slice.bit_len()
-        {
-            if i >= value.bit_len() {
-                slice.set_bit(i, false);
-            } else {
-                slice.set_bit(i, value.get_bit(i));
+            for i in (0..slice.bit_len()).step_by(range.step as _)
+            {
+                if val_index >= value.bit_len() {
+                    slice.set_bit(i, false);
+                } else {
+                    slice.set_bit(i, value.get_bit(val_index));
+                }
+                val_index += 1;
+            }
+        } else {
+            let mut val_index = 0;
+
+            for i in (0..slice.bit_len()).rev().step_by(range.step.abs() as _)
+            {
+                if val_index >= value.bit_len() {
+                    slice.set_bit(i, false);
+                } else {
+                    slice.set_bit(i, value.get_bit(val_index));
+                }
+                val_index += 1;
             }
         }
         Ok(())
@@ -639,11 +678,16 @@ impl BinaryBase
 
         let mut slice = self.data.as_mut_slice().bit_slice_mut(range.range());
 
-        // todo step
-        
-        for i in 0..slice.bit_len()
-        {
-            slice.set_bit(i, value);
+        if range.step > 0 {
+            for i in (0..slice.bit_len()).step_by(range.step as _)
+            {
+                slice.set_bit(i, value);
+            }
+        } else {
+            for i in (0..slice.bit_len()).rev().step_by(range.step.abs() as _)
+            {
+                slice.set_bit(i, value);
+            }
         }
 
         Ok(())
