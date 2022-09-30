@@ -6,7 +6,7 @@ class Binary:
     len: int
     _sign_behavior: Literal['unsigned', 'signed']
 
-    def __init__(self, object: object = None, lenght: Optional[int]=None, sign_behavior: Optional[Literal["unsigned", "signed"]] = None, byte_lenght: Optional[int] = None, signed: Optional[bool]=None):
+    def __init__(self, object: object, lenght: Optional[int]=None, sign_behavior: Optional[Literal["unsigned", "signed"]] = None, byte_lenght: Optional[int] = None, signed: Optional[bool]=None):
         """## Binary
             Class that represent numbers in binary. Wraps arithmetic to bouds of the binary number, 
             allows for quick and easy bit manipulation.
