@@ -44,6 +44,9 @@ print(x[:3])
 # sets first 3 bits to '010'
 x[:3] = "010" 
 
+# prints every second bit
+print(x[::2])
+
 # '0010'
 print(x) 
 ```
@@ -141,6 +144,12 @@ True
 '111110'
 >>> num[:16] # First 16 bits (padded with zeros)
 '00000000 11111010'
+>>> num[::2] # Every other bit
+'1100'
+>>> num[::-1] # Reversed
+'01011111'
+>>> num[[1,3]] # Get second and 4th bit
+'11'
 ```
 *NOTE* that behavior of slicing is slighty diffrent from slicing pythons `str` or list, first bit is from far right, not left. You can also exeed len of the value, in this case added bits will be padded with sign extending bit (`0` for unsigned, `sign_bit` for singed)
 
@@ -155,13 +164,22 @@ True
 * `sign_behavior()` - The way that number behaves on extending and converstions `signed` or `unsigned` 
 * `maximal_value()` - Maximal possibe value than can be hold in this representation and lenght
 * `minimal_value()` - Minimal possibe value than can be hold in this representation and lenght
-* `leading_zeros()` - Amount of leading zeros in the number
-* `trailing_zeros()` - Amount of trailing zeros in the number
 * `is_negative()` - Returns if number is negative
 * `sign_extending_bit()` - Returns the boolean that will be used to extend this value to left 
 * `hex(prefix: bool=True)` - hex representation of this number
 * `bin(prefix: bool=True)`- bin representation of this number
-* `int()` - casted to python integer 
+* `int()` - casted to python integer
+### Searching & Finding Patterns
+* `leading_zeros()` - Amount of leading zeros in the number
+* `trailing_zeros()` - Amount of trailing zeros in the number
+* `leading_ones()` - Amount of leading ones in the number
+* `trailing_ones()` - Amount of trailing ones in the number
+* `find(sub: bool|int|str|Binary)` - Find first occurence (index) of the pattern
+* `find_all(sub: bool|int|str|Binary)` - Find all occurences (index) of the pattern
+* `find_zeros()` - Find indexes of zeros
+* `find_ones()` - Find indexes of ones
+* `count_zeros()` - count how many zeros is in number
+* `count_ones()` - count how many ones is in number
 ### Modifying
 * `append(Binary|bool|str|int)` - Appends value to the end
 * `prepend(Binary|bool|str|int)` - Appends vakue to the start 
@@ -202,6 +220,13 @@ You can select bits by slice and set them, or copy from other number
 >>> num[:] = 0 # Set all bits to 0
 >>> num
 '00000000'
+```
+### Modify by indeces
+```py
+>>> num = Binary(0, lenght=8)
+>>> num[[1,2,3]] = True # Set first, second and third bit to True
+>>> num
+>>> '0000 1110'
 ```
 
 There is few rules
