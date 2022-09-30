@@ -2,9 +2,9 @@ from typing import Any, Iterable, Literal, Optional, overload
 from . import arithm
 
 class Binary:
-    _data: bytes
+    data: bytes
     len: int
-    _sign_behavior: Literal['unsigned', 'signed']
+    sb: Literal['unsigned', 'signed']
 
     def __init__(self, object: object, lenght: Optional[int]=None, sign_behavior: Optional[Literal["unsigned", "signed"]] = None, byte_lenght: Optional[int] = None, signed: Optional[bool]=None):
         """## Binary
@@ -84,25 +84,26 @@ class Binary:
             
             ## Public Methods
             ### Aliases for slicing number:
-            * high_byte
-            * low_byte
-            * extended_low
-            * extended_high
+            * high_byte/low_byte
+            * extended_low/extended_high
             * get_byte
             ### Information about number
             * sign_behavior
-            * maximal_value
-            * minimal_value
-            * leading_zeros
-            * trailing_zeros
+            * maximal_value/minimal_value
+            * leading_zeros/leding_ones
+            * trailing_zeros/trailing_ones
             * is_negative
             * sign_extending_bit
             * hex
             * bin
             * int
+            * count_zeros/count_ones
+            ### Finding bits
+            * find
+            * find_all
+            * find_zeros/find_ones
             ### Modifying
-            * append
-            * prepend
+            * append/prepend
             * strip
             * strip_right
             ### Iterating
@@ -254,6 +255,108 @@ class Binary:
         255
         >>> Binary(0, lenght=8, signed=True).maximum_value()
         127
+        """
+        ...
+    def find(self, sub: bool|int|str|Binary) -> int|None:
+        """
+        ## find
+        Returns index of first occurence of `sub` in the number. If `sub` is not found, returns `None`.
+        >>> Binary("1111 0011").find("1111")
+        4
+        >>> Binary("1111 0011").find("0000")
+        None
+        """
+        ...
+    def find_all(self, sub: bool|int|str|Binary) -> list[int]:
+        """
+        ## find_all
+        Returns list of indexes of subsequences in `self` that matches `sub`
+        >>> Binary("1011 1111").find_all("1111")
+        [0, 1, 2]
+        >>> Binary("1100 0111").find_all("11")
+        [0, 1, 6]
+        """
+        ...
+    def find_zeros(self) -> list[int]:
+        """
+        ## find_zeros
+        Returns list of indexes of all zeros in the number.
+        >>> Binary("11111111").find_zeros()
+        []
+        >>> Binary("00000000").find_zeros()
+        [0, 1, 2, 3, 4, 5, 6, 7]
+        
+        It is equivalent to `find_all(0)` but is usually faster
+        """
+        ...
+    def find_ones(self) -> list[int]:
+        """
+        ## find_ones
+        Returns list of indexes of all ones in the number.
+        >>> Binary("11111111").find_ones()
+        [0, 1, 2, 3, 4, 5, 6, 7]
+
+        It is equivalent to `find_all(1)` but is usually faster
+        """
+        ...
+    def count_zeros(self) -> int:
+        """
+        ## count_zeros
+        Returns number of zeros in the number.
+        >>> Binary("11111111").count_zeros()
+        0
+        >>> Binary("00000000").count_zeros()
+        8
+        """
+        ...
+    def count_ones(self) -> int:
+        """
+        ## count_ones
+        Returns number of ones in the number.
+        >>> Binary("11111111").count_ones()
+        8
+        >>> Binary("00000000").count_ones()
+        0
+        """
+        ...
+    def trailing_zeros(self) -> int:
+        """
+        ## trailing_zeros
+        Returns number of trailing zeros in the number.
+        >>> Binary("0000 1111").trailing_zeros()
+        0
+        >>> Binary("0001 0000").trailing_zeros()
+        4
+        """
+        ...
+    def trailing_ones(self) -> int:
+        """
+        ## trailing_ones
+        Returns number of trailing ones in the number.
+        >>> Binary("1111 0000").trailing_ones()
+        0
+        >>> Binary("0001 1111").trailing_ones()
+        5
+        """
+        ...
+    def leading_zeros(self) -> int:
+        """
+        ## leading_zeros
+        Returns number of leading zeros in the number.
+        >>> Binary("1111 0000").leading_zeros()
+        0
+        >>> Binary("0000 1000").leading_zeros()
+        4
+        """
+        ...
+    def leading_ones(self) -> int:
+        """
+        ## leading_ones
+        Returns number of leading ones in the number.
+        >>> Binary("0000 1111").leading_ones()
+        0
+        >>> Binary("1111 0000").leading_ones()
+        4
         """
         ...
 

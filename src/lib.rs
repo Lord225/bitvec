@@ -16,7 +16,7 @@ use bv::{self, Bits};
 mod binary;
 mod arithm;
 mod cmp;
-
+mod utility;
 
 #[pyclass]
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -241,7 +241,7 @@ impl Binary
     }
 
     #[getter]
-    pub fn _data(&self) -> PyObject {
+    pub fn data(&self) -> PyObject {
         let mut bytes  = self.inner
         .get_slice(
             &types::PySliceIndices::new(0, 
@@ -259,12 +259,12 @@ impl Binary
         self.inner.len().try_into().unwrap()
     }
     #[getter]
-    pub fn _sign_behavior(&self) -> &String {
+    pub fn sb(&self) -> &String {
         &self.inner.sign_behavior
     }
 
     pub fn sign_behavior(&self) -> &String {
-        self._sign_behavior()
+        self.sb()
     }
     pub fn is_negative(&self) -> bool {
         if self.sign_behavior() == "unsigned" {
@@ -396,7 +396,7 @@ impl Binary
         Python::with_gil(|py| {
             let python_int: PyObject = 0.into_py(py);
             
-            python_int.call_method(py, "from_bytes", (self._data(), "little"), Some(vec![("signed", self.sign_behavior() == "signed")].into_py_dict(py)))
+            python_int.call_method(py, "from_bytes", (self.data(), "little"), Some(vec![("signed", self.sign_behavior() == "signed")].into_py_dict(py)))
         }) // from_bytes(self._data, "big", {"signed": self.sign_behavior() == "signed"})
     }
     
@@ -564,13 +564,17 @@ impl Binary
         // index
         if let Ok(index) = index.extract::<isize>() {
             let bit = self.inner.get_bit(index)?;
-
             return Ok(Python::with_gil(|py| bit.into_py(py)));
         }
 
         // slice
         if let Ok(slice) = index.extract::<&types::PySlice>() {
             return Ok(self.slice(&slice.unpack()?)?);
+        }
+        
+        // indeces
+        if let Ok(iterator) = index.iter() {
+            return Self::wrap_object(Ok(binary::BinaryBase::from_data(self.inner.get_indices(iterator)?)));
         }
         
         Err(exceptions::PyTypeError::new_err(format!("Invalid index type {}", index)))
@@ -596,16 +600,93 @@ impl Binary
             if let Ok(value) = value.extract::<bool>() {
                 self.inner.set_slice_bool(slice, value)?;
             } else if let Ok(value) = Self::from(value, Some(range.len().try_into().unwrap()), Some("unsigned")) {
-                self.inner.set_slice(slice, &value.inner.data)?;
+                self.inner.set_slice(slice, &value.inner)?;
             } else  {
                 return Err(exceptions::PyTypeError::new_err(format!("Value {} cannot be used in range {:?}", value, range.range())));
             }
             
             return Ok(());
-        }   
+        }
+
+        // indeces
+        if let Ok(iterator) = index.iter() {
+            if let Ok(value) = value.extract::<bool>() {
+                self.inner.set_indices_bool(iterator, value)?;
+            } else if let Ok(value) = Self::from(value, iterator.len().ok(), Some("unsigned")) {
+                self.inner.set_indices_slice(iterator, &value.inner)?;
+            } else  {
+                return Err(exceptions::PyTypeError::new_err(format!("Value {} cannot be used with {}", value, index)));
+            }
+            return Ok(())
+        }
 
         return Err(exceptions::PyTypeError::new_err(format!("Invalid index type {}", index)));
     }   
+
+
+    // Utility
+    pub fn find(&self, sub: &PyAny) -> PyResult<Option<usize>> {
+        if let Ok(sub) = sub.extract::<PyRef<Binary>>() { 
+            utility::find(&self, &sub)
+        } else if let Ok(bin) = sub.extract::<bool>() { 
+            if bin { 
+                Ok(utility::find_one(&self)) 
+            } else { 
+                Ok(utility::find_zero(&self)) 
+            }
+        } else if let Ok( sub) = Self::from(sub, None, Some(self.sign_behavior())) {
+            utility::find(&self, &sub)
+        } else {
+            Err(exceptions::PyTypeError::new_err(format!("Unsupported type: {}", sub)))
+        }
+    } 
+    pub fn find_all(&self, sub: &PyAny) -> PyResult<Vec<usize>> {
+        if let Ok(sub) = sub.extract::<PyRef<Binary>>() { 
+            utility::find_all(&self, &sub)
+        } else if let Ok(bin) = sub.extract::<bool>() { 
+            if bin { 
+                Ok(utility::find_all_ones(&self))
+            } else { 
+                Ok(utility::find_all_zeros(&self))
+            }
+        } else if let Ok( sub) = Self::from(sub, None, Some(self.sign_behavior())) {
+            utility::find_all(&self, &sub)
+        } else {
+            Err(exceptions::PyTypeError::new_err(format!("Unsupported type: {}", sub)))
+        }
+    }
+    pub fn find_zeros(&self) -> PyResult<Vec<usize>>
+    {
+        Ok(utility::find_all_zeros(&self))
+    }
+    pub fn find_ones(&self) -> PyResult<Vec<usize>>
+    {
+        Ok(utility::find_all_ones(&self))
+    }
+    pub fn count_zeros(&self) -> PyResult<usize>
+    {
+        Ok(utility::count_zeros(&self))
+    }
+    pub fn count_ones(&self) -> PyResult<usize>
+    {
+        Ok(utility::count_ones(&self))
+    }
+    pub fn leading_zeros(&self) -> PyResult<usize>
+    {
+        Ok(utility::leading_zeros(&self))
+    }
+    pub fn trailing_zeros(&self) -> PyResult<usize>
+    {
+        Ok(utility::trailing_zeros(&self))
+    }
+    pub fn leading_ones(&self) -> PyResult<usize>
+    {
+        Ok(utility::leading_ones(&self))
+    }
+    pub fn trailing_ones(&self) -> PyResult<usize>
+    {
+        Ok(utility::trailing_ones(&self))
+    }
 }
 
 impl From<Binary> for PyObject {

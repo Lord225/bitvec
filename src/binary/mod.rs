@@ -463,7 +463,7 @@ impl BinaryBase {
 
         return Ok(binary);
     }
-    // TODO
+
     pub fn parse_bitvec_from_float(object: f64, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         Self::parse_bitvec_from_isize(object as isize, bit_size, sign_behavior)
@@ -601,7 +601,6 @@ impl BinaryBase
         // get padding bits for slice outside t
         let lenght = (range.len() as i64 - slice.len() as i64).max(0) as u64;
         let padd = bv::BitVec::new_fill(self.sign_extending_bit(), lenght);
-
         let concated = slice.bit_concat(padd);
     
         let out = match range.step {
@@ -627,7 +626,18 @@ impl BinaryBase
     }
 
     pub fn get_indices(&self, _slice: &types::PyIterator) -> PyResult<bv::BitVec<u32>> {
-        todo!()
+        let mut out = bv::BitVec::<u32>::with_capacity(1);
+
+        for index in _slice {
+            let index = index?.extract::<isize>()?;
+            let index = self.flatten_index(index);
+            if let Ok(index) = self.in_bounds(index) {
+                out.push_bit(self.data.get_bit(index.try_into().unwrap()));
+            } else {
+                out.push_bit(self.sign_extending_bit());
+            }
+        }
+        return Ok(out);
     }
 
     pub fn set_bit(&mut self, index: isize, value: bool) -> PyResult<()> {
@@ -636,7 +646,7 @@ impl BinaryBase
 
         Ok(())
     }
-    pub fn set_slice(&mut self, slice: &types::PySliceIndices, value: &bv::BitVec<u32>) -> PyResult<()> {
+    pub fn set_slice(&mut self, slice: &types::PySliceIndices, value: &BinaryBase) -> PyResult<()> {
         let range = self.slice_to_range(slice)?;
 
         let mut slice = self.data.as_mut_slice().bit_slice_mut(range.range());
@@ -645,29 +655,18 @@ impl BinaryBase
             return Err(exceptions::PyValueError::new_err(format!("Value and slice are in diffrent lenghts: {} > {}", slice.len(), value.len())));
         }
 
-        if range.step > 0 {
-            let mut val_index = 0;
-
-            for i in (0..slice.bit_len()).step_by(range.step as _)
+        if range.step > 0 
+        {
+            for (index, i) in (0..slice.bit_len()).step_by(range.step as _).enumerate()
             {
-                if val_index >= value.bit_len() {
-                    slice.set_bit(i, false);
-                } else {
-                    slice.set_bit(i, value.get_bit(val_index));
-                }
-                val_index += 1;
+                slice.set_bit(i, value.get_bit(index.try_into().unwrap())?);
             }
-        } else {
-            let mut val_index = 0;
-
-            for i in (0..slice.bit_len()).rev().step_by(range.step.abs() as _)
+        } 
+        else 
+        {
+            for (index, i) in (0..slice.bit_len()).rev().step_by(range.step.abs() as _).enumerate()
             {
-                if val_index >= value.bit_len() {
-                    slice.set_bit(i, false);
-                } else {
-                    slice.set_bit(i, value.get_bit(val_index));
-                }
-                val_index += 1;
+                slice.set_bit(i, value.get_bit(index.try_into().unwrap())?);   
             }
         }
         Ok(())
@@ -678,12 +677,15 @@ impl BinaryBase
 
         let mut slice = self.data.as_mut_slice().bit_slice_mut(range.range());
 
-        if range.step > 0 {
+        if range.step > 0 
+        {
             for i in (0..slice.bit_len()).step_by(range.step as _)
             {
                 slice.set_bit(i, value);
             }
-        } else {
+        } 
+        else 
+        {
             for i in (0..slice.bit_len()).rev().step_by(range.step.abs() as _)
             {
                 slice.set_bit(i, value);
@@ -692,6 +694,30 @@ impl BinaryBase
 
         Ok(())
     }
+    pub fn set_indices_slice(&mut self, _slice: &types::PyIterator, value: &BinaryBase) -> PyResult<()> {
+        for (index, i) in _slice.enumerate() {
+            let i = i?.extract::<isize>()?;
+            let i = self.flatten_index(i);
+            
+            self.in_bounds(i)?;
+            
+            self.data.set(i.try_into().unwrap(), value.get_bit(index.try_into().unwrap())?);
+        }
+        Ok(())
+    }
+    pub fn set_indices_bool(&mut self, _slice: &types::PyIterator, value: bool) -> PyResult<()> {
+        for i in _slice {
+            let i = i?.extract::<isize>()?;
+            let i = self.flatten_index(i);
+            
+            self.in_bounds(i)?;
+
+            self.data.set(i.try_into().unwrap(), value);
+
+        }
+        Ok(())
+    }
+
     pub fn len(&self) -> u64 {
         return self.data.bit_len();
     }
