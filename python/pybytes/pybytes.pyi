@@ -257,6 +257,7 @@ class Binary:
         127
         """
         ...
+    
     def find(self, sub: bool|int|str|Binary) -> int|None:
         """
         ## find
@@ -265,6 +266,8 @@ class Binary:
         4
         >>> Binary("1111 0011").find("0000")
         None
+
+        This function is specially optimized for searching for single bit.
         """
         ...
     def find_all(self, sub: bool|int|str|Binary) -> list[int]:
@@ -286,7 +289,7 @@ class Binary:
         >>> Binary("00000000").find_zeros()
         [0, 1, 2, 3, 4, 5, 6, 7]
         
-        It is equivalent to `find_all(0)` but is usually faster
+        It is equivalent to `find_all(0)` but is usually a little faster (both are optimized for searching for single bit)
         """
         ...
     def find_ones(self) -> list[int]:
@@ -296,9 +299,10 @@ class Binary:
         >>> Binary("11111111").find_ones()
         [0, 1, 2, 3, 4, 5, 6, 7]
 
-        It is equivalent to `find_all(1)` but is usually faster
+        It is equivalent to `find_all(1)` but is usually a little faster (both are optimized for searching for single bit)
         """
         ...
+    
     def count_zeros(self) -> int:
         """
         ## count_zeros
@@ -319,6 +323,7 @@ class Binary:
         0
         """
         ...
+    
     def trailing_zeros(self) -> int:
         """
         ## trailing_zeros
@@ -347,6 +352,8 @@ class Binary:
         0
         >>> Binary("0000 1000").leading_zeros()
         4
+
+        `trailing_zeros` is ussually faster than `leading_zeros`, for now it is even faster to write `obj[::-1].trailing_zeros()` than `obj.leading_zeros()`
         """
         ...
     def leading_ones(self) -> int:
@@ -357,6 +364,8 @@ class Binary:
         0
         >>> Binary("1111 0000").leading_ones()
         4
+
+        `trailing_ones` is ussually faster than `leading_ones`, for now it is even faster to write `obj[::-1].trailing_ones()` than `obj.leading_ones()`
         """
         ...
 
@@ -373,7 +382,9 @@ class Binary:
         ## prepend
         appends value to the start of the number
         >>> Binary('0101').prepend('111')
-        '0101111' 
+        '0101111'
+
+        Prepend is generally slower then append. If you need to `preprend` multiple times consider calling `append` instead and reversing the number using `[::-1]`
         """
         ...
 

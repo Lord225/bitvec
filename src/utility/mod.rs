@@ -36,14 +36,29 @@ pub fn count_ones(binary: &crate::Binary) -> usize
     use bv::Bits;
 
     let data = &binary.inner.data;
+
+    if data.block_len() == 0 {
+        return 0;
+    }
+
     let mut total = 0;
-    for block_id in 0..data.block_len() {
+    for block_id in 0..(data.block_len()-1) {
         let block = data.get_block(block_id);
         total += block.count_ones() as usize;
     }
 
+    let block = data.get_block(data.block_len()-1); 
+    let last_block_bits = data.len() as u32 % u32::BITS as u32;
 
-    return total;
+    if last_block_bits == 0 {
+        total + block.count_ones() as usize
+    } else {
+        // Crate mask with zeros on non used bits
+        let mask = (1u32 << last_block_bits) - 1;
+        // Mask bits in block (set all unused bits to 0) to make sure that only used bits are counted
+        total + (block & mask).count_ones() as usize 
+    }
+
 }
 
 pub fn count_zeros(binary: &crate::Binary) -> usize
@@ -51,6 +66,11 @@ pub fn count_zeros(binary: &crate::Binary) -> usize
     use bv::Bits;
 
     let data = &binary.inner.data;
+    
+    if data.block_len() == 0 {
+        return 0;
+    }
+    
     let mut total = 0;
     for block_id in 0..(data.block_len()-1) {
         let block = data.get_block(block_id);
@@ -58,12 +78,16 @@ pub fn count_zeros(binary: &crate::Binary) -> usize
     }
 
     let block = data.get_block(data.block_len()-1); 
-
     let last_block_bits = data.len() as u32 % u32::BITS as u32;
-    let mask = !((1 << last_block_bits) - 1);
-    total += (block | mask).count_zeros() as usize;
-
-    return total;
+    
+    if last_block_bits == 0 {
+        total + block.count_zeros() as usize
+    } else {
+        // Crate mask ones on non used bits
+        let mask = !((1u32 << last_block_bits) - 1);
+        // Mask bits in block (set all unused bits to 1) to make sure that only used bits are counted
+        total + (block | mask).count_zeros() as usize
+    }
 }
 
 struct Windows<'a> {
@@ -155,7 +179,7 @@ pub fn find_all_ones(binary: &crate::Binary) -> Vec<usize> {
     IterableBitSlice(&binary.inner.data).into_iter().enumerate().filter(|(_, x)| *x).map(|(i, _)| i).collect()
 }
 pub fn find_all_zeros(binary: &crate::Binary) -> Vec<usize> {
-    use super::binary::reduce::*;
+    use super::binary::reduce::*; 
 
     IterableBitSlice(&binary.inner.data).into_iter().enumerate().filter(|(_, x)| !*x).map(|(i, _)| i).collect()
 }

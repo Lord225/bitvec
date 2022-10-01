@@ -4,7 +4,7 @@ pub mod sliceunpack;
 use std::mem::transmute;
 use std::ops::Range;
 
-use bv::{self, Bits, BitsPush, BitSlice, BitSliceable, BitsExt, BitSliceableMut, BitsMut };
+use bv::{self, Bits, BitsPush, BitSliceable, BitsExt, BitSliceableMut, BitsMut };
 
 use pyo3::{prelude::*, PyResult, types, exceptions};
 use pyo3::types::IntoPyDict;
@@ -129,36 +129,82 @@ impl BinaryBase
     /// Returns a string representation of the binary in hex. Pads ramaining bits with zeros. if `prefix` is true adds `0x`
     pub fn to_string_hex(&self, prefix: bool) -> String
     {
-        fn slice_to_u32(slice: &BitSlice<u32>) -> u32
+        #[inline(always)]
+        fn to_hex(n: u32) -> [u8; 8]
         {
-            let mut result = 0;
-            for i in 0..slice.bit_len()
+            let mut chars = [0 as u8; 8];
+            
+            for i in 0..8
             {
-                result |= (slice.get_bit(i) as u32) << i;
+                let chunk = n.get_bits(4*i as u64, 4);
+                chars[i] = match chunk {
+                    0 => '0',
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
+                    6 => '6',
+                    7 => '7',
+                    8 => '8',
+                    9 => '9',
+                    10 => 'a',
+                    11 => 'b',
+                    12 => 'c',
+                    13 => 'd',
+                    14 => 'e',
+                    15 => 'f',
+                    _ => unreachable!("Invalid chunk"),
+                } as u8;
             }
-            result
+            chars
         }
 
-        let mut output = String::with_capacity(self.len_usize()/4);
-    
-
-        for i in (0..self.len()).step_by(4)
+        #[inline(always)]
+        fn push_n(str: &mut Vec<u8>, chars: [u8; 8], n: usize)
         {
-            let i = i.try_into().unwrap();
-
-            let slice: BitSlice<u32> = if i+4 < self.len() { 
-                self.data.bit_slice(i..(i+4)) 
-            } else {
-                self.data.bit_slice(i..self.len())    
-            };
-
-            output.push_str(&format!("{:x}", slice_to_u32(&slice)));
+            for i in (0..n).rev()
+            {
+                str.push(chars[i]);
+            }
         }
+        #[inline(always)]
+        fn push_all(str: &mut Vec<u8>, chars: [u8; 8])
+        {
+            for ch in chars
+            {
+                str.push(ch);
+            }
+        }
+
+        let mut output = Vec::with_capacity(self.len_usize()/4);
+        let data = &self.data;
+        let last_block = data.block_len()-1;
+        
+        if data.block_len() != 0 
+        {
+            let bits_in_last_block = (self.len_usize() % 32).div_ceil(4);
+            let block = data.get_block(last_block);
+            
+            if bits_in_last_block != 0 {
+                push_n(&mut output, to_hex(block), bits_in_last_block);
+            } else {
+                push_all(&mut output, to_hex(block));
+            }
+
+            for i in (0..last_block).rev()
+            {
+                let block = data.get_raw_block(i);
+                push_all(&mut output, to_hex(block));
+            }
+        }
+
+        let output = unsafe{ String::from_utf8_unchecked(output) };
         
         if prefix {
-            format!("0x{}", &output.chars().rev().collect::<String>())
+            format!("0x{}", &output)
         } else {
-            output.chars().rev().collect::<String>()
+            output
         }
         
     }
@@ -590,9 +636,10 @@ impl BinaryBase
             return Ok(self.sign_extending_bit())
         }
     }
+    
     pub fn get_slice(&self, slice: &types::PySliceIndices) -> PyResult<bv::BitVec<u32>> {
         use reduce::*;
-        
+
         let range = self.slice_to_range(slice)?;
 
         // get data from range
@@ -602,10 +649,22 @@ impl BinaryBase
         let lenght = (range.len() as i64 - slice.len() as i64).max(0) as u64;
         let padd = bv::BitVec::new_fill(self.sign_extending_bit(), lenght);
         let concated = slice.bit_concat(padd);
+
+        let quick_reverse = |vec: bv::BitVec<u32>| {
+            let blocks = vec.into_boxed_slice();
+            
+            let mut reversed = bv::BitVec::with_block_capacity(blocks.len());
+            for block in blocks.iter().rev() {
+                reversed.push_block(block.reverse_bits());
+            }
+
+            reversed
+        };
     
         let out = match range.step {
             0   => Err(exceptions::PyIndexError::new_err(format!("Step equal zero"))),
-            1   => Ok(concated.to_bit_vec()), // optimalization for most common case
+            1   => Ok(concated.to_bit_vec()), // specialization for most common case
+            -1  => Ok(quick_reverse(concated.to_bit_vec())), // specialization for common case (reversing with ::-1)
             0.. => {
                 let mut out = bv::BitVec::<u32>::with_capacity(concated.bit_len()/range.step as u64);
                 for bit in IterableBitSlice(&concated).into_iter().step_by(range.step.try_into().unwrap()) {

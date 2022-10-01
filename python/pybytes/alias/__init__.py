@@ -101,7 +101,7 @@ def i0(object: object = None) -> Binary:
     Returns signed 2 bit Binary value. Pads remaing bits with last bit (sign extended).
     It 'holds' always 0.
     """
-    return signed_bin(object, 1, True)
+    return signed_bin(object, 0, True)
 
 def i1(object: object = None) -> Binary:
     """
