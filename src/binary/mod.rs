@@ -103,28 +103,49 @@ impl BinaryBase
     /// let binary = BinaryBase::from_data(BitVec::from_bits(5)));
     /// assert_eq!(binary.to_string_symbols('1', '0'), "101".to_string());
     /// ```
-    pub fn to_string_symbols(&self, high: char, low: char) -> String
+    pub fn to_string_symbols(&self, high: u8, low: u8) -> String
     {
+        use reduce::*;
+
         if self.data.is_empty() {
             return String::new();
         }
         
-        let mut s = String::new();
-        for i in 0..self.len()
+        let mut s = Vec::<u8>::with_capacity(self.data.len().try_into().unwrap());
+
+        for bit in IterableBitSlice(&self.data).into_iter().rev()
         {
-            s.push(if self.data.get_bit(self.len() - i - 1) { high } else { low });
+            if bit {
+                s.push(high);
+            }
+            else {
+                s.push(low);
+            }
         }
-        s
+        // safty: TODO: check if this is safe, bsc high and low are u8.
+        unsafe { String::from_utf8_unchecked(s) }
     }
     /// Returns a string representation of the binary but bits are in reversed order. And uses `high` and `low` as symbols for bit states
-    pub fn to_string_symbols_rev(&self, high: char, low: char) -> String
+    pub fn to_string_symbols_rev(&self, high: u8, low: u8) -> String
     {
-        let mut s = String::new();
-        for i in 0..self.len()
-        {
-            s.push(if self.data.get_bit(i) { high } else { low });
+        use reduce::*;
+
+        if self.data.is_empty() {
+            return String::new();
         }
-        s
+        
+        let mut s = Vec::<u8>::with_capacity(self.data.len().try_into().unwrap());
+        for bit in IterableBitSlice(&self.data).into_iter()
+        {
+            if bit {
+                s.push(high);
+            }
+            else {
+                s.push(low);
+            }
+        }
+        // safty: TODO: check if this is safe, bsc high and low are u8.
+        unsafe { String::from_utf8_unchecked(s) }
     }
     /// Returns a string representation of the binary in hex. Pads ramaining bits with zeros. if `prefix` is true adds `0x`
     pub fn to_string_hex(&self, prefix: bool) -> String
@@ -217,7 +238,7 @@ impl BinaryBase
     /// &[(2, '\''), (2, ' ')]
     /// ```
     /// With input string `1111000011110000` will produce `1111'0000 1111'0000`
-    pub fn to_string_formatted(&self, format: &[(usize, char)], high: char, low: char, prefix: bool) -> String
+    pub fn to_string_formatted(&self, format: &[(usize, char)], high: u8, low: u8, prefix: bool) -> String
     {
         // format: "4'4 "
         // output:
@@ -257,12 +278,12 @@ impl BinaryBase
     /// Returns a string representation of the binary Using `1` to represend high state and `0` to represent low state, will not add any formatting
     pub fn to_string_bin(&self, prefix: bool) -> String
     {
-        self.to_string_formatted(&[], '1', '0', prefix) 
+        self.to_string_formatted(&[], '1' as u8, '0' as u8, prefix) 
     }
     /// Returns a string representation of the binary Using `1` to represend high state and `0` to represent low state, will add spaces every 8th bit.
     pub fn to_string_formatted_default(&self) -> String
     {
-        self.to_string_formatted(&[(8, ' ')], '1', '0', false)
+        self.to_string_formatted(&[(8, ' ')], '1' as u8, '0' as u8, false)
     }
 }
 
