@@ -7,7 +7,7 @@ use std::ops::Range;
 use bv::{self, Bits, BitsPush, BitSliceable, BitsExt, BitSliceableMut, BitsMut };
 
 use pyo3::{prelude::*, PyResult, types, exceptions};
-use pyo3::types::IntoPyDict;
+use pyo3::types::{IntoPyDict, PySliceIndices};
 
 use reduce::ReduceOps;
 
@@ -499,17 +499,30 @@ impl BinaryBase {
     pub fn parse_bitvec_from_long_integer(object: &types::PyLong, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
         let sign_behevior = sign_behavior.unwrap_or(if object.compare(0).is_ok_and(|x|x.is_lt()) { "signed" } else { "unsigned" });
+
         let bit_lenght = bit_size.unwrap_or(object.call_method0("bit_length")?.extract::<usize>()?);
 
         let mut bitvec = bv::BitVec::<u32>::with_capacity(bit_lenght.try_into().unwrap());
 
-        let bytes = Python::with_gil(|py| {
-            object.call_method("to_bytes", 
-                ((bit_lenght.checked_next_multiple_of(32).unwrap())/8, "big"),     
-              Some(vec![("signed", sign_behevior=="signed")].into_py_dict(py))
-            )
-        })?.extract::<&[u8]>()?;  // object.to_bytes(size, "big", signed=True)
+        let (bytes, bit_lenght) = Python::with_gil(|py| {
+            //try calling object.to_bytes(size, "big", signed=True) if it failes (for negative powers of two) call same function but add one bit.
+            if let Ok(bytes) = object.call_method(
+                                          "to_bytes", 
+                                          (bit_lenght.checked_next_multiple_of(32).unwrap()/8, "big"),
+                                        Some(vec![("signed", sign_behevior=="signed")].into_py_dict(py))) {
+                (bytes, bit_lenght)
+            } else {
+                let bytes = object.call_method(
+                                   "to_bytes", 
+                                   ((bit_lenght+1).checked_next_multiple_of(32).unwrap()/8, "big"),     
+                                 Some(vec![("signed", sign_behevior=="signed")].into_py_dict(py)))
+                      .unwrap();
+                (bytes,  bit_lenght+1)
+            }
+        });
 
+        
+        let bytes = bytes.extract::<&[u8]>()?;
 
         // align and reverse bits in way that bv can handle safty: bytes.len() is multiple of 32/8=4 and transutating [u8; 4] to u32 is safe bsc all values of [u8; 4] are in range of u32 
         let bytes = bytes.iter().map(|x| x.reverse_bits()).collect::<Vec<u8>>();
@@ -522,11 +535,9 @@ impl BinaryBase {
         for block in number.iter().rev() {
             bitvec.push_block(block.reverse_bits());
         }
-
         let mut binary = Self { data: bitvec, sign_behavior: sign_behevior.to_string() };
-
+        
         binary.resize_constrained(bit_lenght)?;
-
 
         return Ok(binary);
     }
@@ -672,14 +683,19 @@ impl BinaryBase
         let concated = slice.bit_concat(padd);
 
         let quick_reverse = |vec: bv::BitVec<u32>| {
+            let vector_lenght = vec.bit_len();
             let blocks = vec.into_boxed_slice();
             
             let mut reversed = bv::BitVec::with_block_capacity(blocks.len());
             for block in blocks.iter().rev() {
                 reversed.push_block(block.reverse_bits());
             }
-
-            reversed
+            if vector_lenght % u32::BITS as u64 == 0 {
+                reversed
+            } else {
+                let rem_bits = u32::BITS as u64 - vector_lenght % u32::BITS as u64;
+                BinaryBase::from_data(reversed).get_slice(&PySliceIndices::new(rem_bits.try_into().unwrap(), isize::MAX, 1)).unwrap()
+            }
         };
     
         let out = match range.step {
