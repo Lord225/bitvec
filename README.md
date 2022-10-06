@@ -3,14 +3,13 @@ Quick Start
 ```
 pip install git+https://github.com/Lord225/PyBytes.git
 ```
-Tools written in python for quick bit manipulation on arbitrary sized number. 
+Tools written for python for Quick & intuitive bit manipulation
 It is:
 * Simpler to manipulate bits than with native python ints
 * Able to correctly wrap numbers in arithmetic operations
 * Emulate behavior of unsigned, signed integers
 * Unit-tested 
-* Written in Rust
-
+* Written in Rust (It is pritty fast)
 
 # Unittests
 ```
