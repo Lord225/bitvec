@@ -9,7 +9,7 @@ It is:
 * Able to correctly wrap numbers in arithmetic operations
 * Emulate behavior of unsigned, signed integers
 * Unit-tested 
-* Written in Rust (It is pritty fast)
+* Written in Rust (It is quite fast)
 
 # Unittests
 ```
