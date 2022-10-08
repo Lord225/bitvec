@@ -1,9 +1,5 @@
 # BitVec
 ## Installation
-```
-pip install bitvec
-```
-
 Tools written for python for Quick & intuitive bit manipulation
 It is:
 * Simpler to manipulate bits than with native python ints
@@ -11,12 +7,14 @@ It is:
 * Emulate behavior of unsigned, signed integers
 * Unit-tested 
 * Written in Rust (It is quite fast)
-
+* 
+```
+pip install bitvec
+```
 # Unittests
 ```
 python -m unittest python\tests\tests.py
 ```
-
 # PyPi
 ```
 https://pypi.org/project/bitvec/
