@@ -6,8 +6,7 @@ It is:
 * Able to correctly wrap numbers in arithmetic operations
 * Emulate behavior of unsigned, signed integers
 * Unit-tested 
-* Written in Rust (It is quite fast)
-* 
+* Written in Rust (Some operations are quite fast)
 ```
 pip install bitvec
 ```
@@ -155,6 +154,8 @@ True
 '11'
 ```
 *NOTE* that behavior of slicing is slighty diffrent from slicing pythons `str` or list, first bit is from far right, not left. You can also exeed len of the value, in this case added bits will be padded with sign extending bit (`0` for unsigned, `sign_bit` for singed)
+
+Note that slicing makes a copy of the vector
 
 ## Public Methods
 ### Aliases for slicing number
