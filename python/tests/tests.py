@@ -1,8 +1,8 @@
 import unittest
-from pybytes import Binary
-from pybytes import arithm
-from pybytes import alias
-from pybytes.alias import u4, i4, u7, u8, i8, i16
+from bitvec import Binary
+from bitvec import arithm
+from bitvec import alias
+from bitvec.alias import u4, i4, u7, u8, i8, i16
 
 # python -m unittest python\tests\tests.py
 
@@ -554,12 +554,12 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('0101 0101').find_zeros(), [1,3,5,7])
         self.assertEqual(u8('1111 1111').find_zeros(), [])
     def test_find_zeros_empty(self):
-        from pybytes.alias import i0, u0
+        from bitvec.alias import i0, u0
         self.assertEqual(u0('').find_zeros(), [])
         self.assertEqual(u0(0).find_zeros(), [])
         self.assertEqual(i0().find_zeros(), [])
     def test_find_zeros_long(self):
-        from pybytes.alias import u1024
+        from bitvec.alias import u1024
         self.assertEqual(u1024().find_zeros(), list(range(1024)))
         self.assertEqual(u1024()[:1000].find_zeros(), list(range(1000)))
     
@@ -568,16 +568,16 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('0101 0101').find_ones(), [0,2,4,6])
         self.assertEqual(u8('0000 0000').find_ones(), [])
     def test_find_ones_empty(self):
-        from pybytes.alias import u0, i0
+        from bitvec.alias import u0, i0
         self.assertEqual(u0('').find_ones(), [])
         self.assertEqual(u0(0).find_ones(), [])
         self.assertEqual(i0(0).find_ones(), [])
     def test_find_ones_long(self):
-        from pybytes.alias import u1024
+        from bitvec.alias import u1024
         self.assertEqual((~u1024()[:1024]).find_ones(), list(range(1024)))
         self.assertEqual((~u1024()[:1000]).find_ones(), list(range(1000)))
     def test_find_ones_len_one(self):
-        from pybytes.alias import u1, i1
+        from bitvec.alias import u1, i1
         self.assertEqual(u1(1).find_ones(), [0])
         self.assertEqual(u1(0).find_ones(), [])
         self.assertEqual(i1(-1).find_ones(), [0])
@@ -587,12 +587,12 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('0101 0101').count_zeros(), 4)
         self.assertEqual(u8('1111 1111').count_zeros(), 0)
     def test_count_zeros_empty(self):
-        from pybytes.alias import u0, i0
+        from bitvec.alias import u0, i0
         self.assertEqual(u0('').count_zeros(), 0)
         self.assertEqual(u0(0).count_zeros(), 0)
         self.assertEqual(i0(0).count_zeros(), 0)
     def test_count_zeros_long(self):
-        from pybytes.alias import u1024
+        from bitvec.alias import u1024
         self.assertEqual(u1024().count_zeros(), 1024)
         self.assertEqual(u1024()[:1000].count_zeros(), 1000)
     
@@ -601,12 +601,12 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('0101 0101').count_ones(), 4)
         self.assertEqual(u8('0000 0000').count_ones(), 0)
     def test_count_ones_empty(self):
-        from pybytes.alias import u0, i0
+        from bitvec.alias import u0, i0
         self.assertEqual(u0('').count_ones(), 0)
         self.assertEqual(u0(0).count_ones(), 0)
         self.assertEqual(i0(0).count_ones(), 0)
     def test_count_ones_long(self):
-        from pybytes.alias import u1024
+        from bitvec.alias import u1024
         self.assertEqual((~u1024()[:1024]).count_ones(), 1024)
         self.assertEqual((~u1024()[:1000]).count_ones(), 1000)
 
@@ -616,12 +616,12 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('0000 0001').trailing_zeros(), 0)
         self.assertEqual(u8('0000 0010').trailing_zeros(), 1)
     def test_trailing_zeros_empty(self):
-        from pybytes.alias import u0, i0
+        from bitvec.alias import u0, i0
         self.assertEqual(u0('').trailing_zeros(), 0)
         self.assertEqual(u0(0).trailing_zeros(), 0)
         self.assertEqual(i0(0).trailing_zeros(), 0)
     def test_trailling_zeros_long(self):
-        from pybytes.alias import u1024
+        from bitvec.alias import u1024
         self.assertEqual(u1024().trailing_zeros(), 1024)
         self.assertEqual(u1024()[:1000].trailing_zeros(), 1000)
 
@@ -631,12 +631,12 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('1111 1110').trailing_ones(), 0)
         self.assertEqual(u8('1111 1101').trailing_ones(), 1)
     def test_trailing_ones_empty(self):
-        from pybytes.alias import u0, i0
+        from bitvec.alias import u0, i0
         self.assertEqual(u0('').trailing_ones(), 0)
         self.assertEqual(u0(0).trailing_ones(), 0)
         self.assertEqual(i0(0).trailing_ones(), 0)
     def test_trailling_ones_long(self):
-        from pybytes.alias import u1024
+        from bitvec.alias import u1024
         self.assertEqual((~u1024()).trailing_ones(), 1024)
         self.assertEqual((~u1024()[:1000]).trailing_ones(), 1000)
 
@@ -646,12 +646,12 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('1000 0000').leading_zeros(), 0)
         self.assertEqual(u8('0100 0000').leading_zeros(), 1)
     def test_leading_zeros_empty(self):
-        from pybytes.alias import u0, i0
+        from bitvec.alias import u0, i0
         self.assertEqual(u0('').leading_zeros(), 0)
         self.assertEqual(u0(0).leading_zeros(), 0)
         self.assertEqual(i0(0).leading_zeros(), 0)
     def test_leading_zeros_long(self):
-        from pybytes.alias import u1024
+        from bitvec.alias import u1024
         self.assertEqual(u1024().leading_zeros(), 1024)
         self.assertEqual(u1024()[:1000].leading_zeros(), 1000)
     
@@ -661,12 +661,12 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('0111 1111').leading_ones(), 0)
         self.assertEqual(u8('1011 1111').leading_ones(), 1)
     def test_leading_ones_empty(self):
-        from pybytes.alias import u0, i0
+        from bitvec.alias import u0, i0
         self.assertEqual(u0('').leading_ones(), 0)
         self.assertEqual(u0(0).leading_ones(), 0)
         self.assertEqual(i0(0).leading_ones(), 0)
     def test_leading_ones_long(self):
-        from pybytes.alias import u1024
+        from bitvec.alias import u1024
         self.assertEqual((~u1024()).leading_ones(), 1024)
         self.assertEqual((~u1024()[:1000]).leading_ones(), 1000)
     

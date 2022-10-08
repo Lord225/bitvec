@@ -736,7 +736,8 @@ impl BinaryIterator {
 }
 
 /// A Python module implemented in Rust.
-#[pymodule]
+#[pymodule()]
+#[pyo3(name = "bitvec")]
 fn pybytes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Binary>()?;
     m.add_class::<BinaryIterator>()?;

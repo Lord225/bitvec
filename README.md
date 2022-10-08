@@ -1,7 +1,12 @@
-# PyBytes
+# BitVec
 Quick Start
+Install using pip
 ```
-pip install git+https://github.com/Lord225/PyBytes.git
+pip install bitvec
+```
+Or directly from github
+```
+pip install git+https://github.com/Lord225/bitvec.git
 ```
 Tools written for python for Quick & intuitive bit manipulation
 It is:
@@ -64,7 +69,7 @@ Including its representation as string, int, boolean, list of boolean-convertabl
 ## Examples
 
 ```py
->>> from pybytes import Binary
+>>> from bitvec import Binary
 >>> Binary("0110") # From string representing binary number. Following zeros are used to inherit len of number.
 '0110'
 >>> Binary(4, lenght=8) # Crate number with 8 bits, 4 is converted to binary and padded with zeros.
@@ -82,7 +87,7 @@ Including its representation as string, int, boolean, list of boolean-convertabl
 ## Alias
 Module defines factories with predefined sizes and behaviors like u8, u16, i16, i64 ect. These ones can be used as followed:
 ```py
->>> from pybytes.alias import u8
+>>> from bitvec.alias import u8
 >>> u8(3)
 '00000011'
 ```
@@ -263,7 +268,7 @@ In module `arithm` there are functions that can be used to perform arithmetic/lo
 Import this submodule and check all of them!
 
 ```py
->>> from pybytes import arithm
+>>> from bitvec import arithm
 >>> arithm.wrapping_add(u4("1111"), "0001") 
 '0000' # 15 + 1 = 16, but we have only 4 bits, so we wrap around and get 0
 >>> arithm.overflowing_add(u4("1111"), "0001")
