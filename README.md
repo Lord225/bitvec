@@ -1,24 +1,22 @@
 # BitVec
-Quick Start
-Install using pip
-```
-pip install bitvec
-```
-Or directly from github
-```
-pip install git+https://github.com/Lord225/bitvec.git
-```
-Tools written for python for Quick & intuitive bit manipulation
+## Installation
+Tools written for python for fast and simple bit manipulation
 It is:
 * Simpler to manipulate bits than with native python ints
 * Able to correctly wrap numbers in arithmetic operations
 * Emulate behavior of unsigned, signed integers
 * Unit-tested 
-* Written in Rust (It is quite fast)
-
+* Written in Rust (Some operations are quite fast)
+```
+pip install bitvec
+```
 # Unittests
 ```
 python -m unittest python\tests\tests.py
+```
+# PyPi
+```
+https://pypi.org/project/bitvec/
 ```
 
 Example use:
@@ -28,31 +26,40 @@ from bitvec import arithm
 
 # Creating new number. Size is inferred from leading zeros
 x = Binary('0110')
-print(f"{x}, lenght: {len(x}") # prints '0110, lenght: 4'
-
 y = Binary(1, lenght=9) # You can specify len too
 
-# prints 504 (~000000111)
-print(int(~(x+y))) 
+print(f"{x}, lenght: {len(x)}") # prints '0110, lenght: 4'
+
+print(int(~(x+y))) # prints 504 (0b111111000)
 
 # Arithmetic correctly wraps and you can check the status
 # overflowing_add return the wrapped sum and boolen to indicate if overflow occurs
-print(arithm.overflowing_add(x, '1100')) 
+print(arithm.overflowing_add(x, '1100')) # (0010, True)
 
 # Set first bit to high
 x[0] = True 
 
-# prints first 3 bits
-print(x[:3]) 
+# slice bits
+print(x[:3]) # ('111')
 
-# sets first 3 bits to '010'
-x[:3] = "010" 
+# sets first 3 bits to '001'
+x[:3] = "001" 
 
-# prints every second bit
-print(x[::2])
+# convert to hex
+print(x.hex()) # '0x1'
 
-# '0010'
-print(x) 
+# every second bit of '0001' 
+print(x[::2]) # '01'    ^ ^
+
+# you can quickly iterate over bits, bytes or any other chunk of bits with .iter(size) function
+for i in x.iter(2):
+    print("Chunk of two bits: ", i) # i is `01` then `00`
+
+# count all zeros
+print(x.count_zeros())  # prints 3
+
+# find indexes of all zeros
+print(x.find_all('0')) # prints [1, 2, 3] 
 ```
 
 # Brief docs
@@ -156,6 +163,8 @@ True
 '11'
 ```
 *NOTE* that behavior of slicing is slighty diffrent from slicing pythons `str` or list, first bit is from far right, not left. You can also exeed len of the value, in this case added bits will be padded with sign extending bit (`0` for unsigned, `sign_bit` for singed)
+
+Note that slicing makes a copy of the vector
 
 ## Public Methods
 ### Aliases for slicing number
