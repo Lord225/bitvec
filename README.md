@@ -1,16 +1,7 @@
 # BitVec
 ## Installation
-### pip
 ```
 pip install bitvec
-```
-### pip+git
-```
-pip install git+https://github.com/Lord225/bitvec.git
-```
-### PyPi repo 
-```
-https://pypi.org/project/bitvec/
 ```
 
 Tools written for python for Quick & intuitive bit manipulation
@@ -24,6 +15,11 @@ It is:
 # Unittests
 ```
 python -m unittest python\tests\tests.py
+```
+
+# PyPi
+```
+https://pypi.org/project/bitvec/
 ```
 
 Example use:
