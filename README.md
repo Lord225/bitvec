@@ -18,8 +18,8 @@ python -m unittest python\tests\tests.py
 
 Example use:
 ```py
-from pybytes import Binary
-from pybytes import arithm
+from bitvec import Binary
+from bitvec import arithm
 
 # Creating new number. Size is inferred from leading zeros
 x = Binary('0110')

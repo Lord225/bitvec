@@ -1,6 +1,6 @@
 from typing import Optional
-from ..pybytes import Binary
-from .. import pybytes 
+from ..bitvec import Binary
+from .. import bitvec 
 
 def unsigned_bin(object: object = None, size: Optional[int] = None) -> Binary:
     """

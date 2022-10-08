@@ -1,11 +1,11 @@
 [package]
-name = "pybytes"
+name = "bitvec"
 version = "0.1.8"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "pybytes"
+name = "bitvec"
 crate-type = ["cdylib"]
 
 [dependencies]
