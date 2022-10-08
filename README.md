@@ -1,13 +1,18 @@
 # BitVec
-Quick Start
-Install using pip
+## Installation
+### pip
 ```
 pip install bitvec
 ```
-Or directly from github
+### pip+git
 ```
 pip install git+https://github.com/Lord225/bitvec.git
 ```
+### PyPi repo 
+```
+https://pypi.org/project/bitvec/
+```
+
 Tools written for python for Quick & intuitive bit manipulation
 It is:
 * Simpler to manipulate bits than with native python ints
