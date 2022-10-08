@@ -1,6 +1,6 @@
 # BitVec
 ## Installation
-Tools written for python for Quick & intuitive bit manipulation
+Tools written for python for fast and simple bit manipulation
 It is:
 * Simpler to manipulate bits than with native python ints
 * Able to correctly wrap numbers in arithmetic operations
