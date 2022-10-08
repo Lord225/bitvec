@@ -14,6 +14,7 @@ def flaged_add(a: Binary, b: Any) -> Tuple[Binary, Flags]:
         * Zero Flag (number equal to zero)
         * OverFlow Flag (overflow occure)
         * Sign Flag (`out[-1] == True`)
+
     ```
     >>> flaged_add(u8(255), 1)
     ('00000000', Flags(of=false, zf=true, sf=false))
@@ -51,10 +52,12 @@ def flaged_sub(a: Binary, b: Any) -> Tuple[Binary, Flags]:
         * Zero Flag (number equal to zero)
         * OverFlow Flag (carry flag is true)
         * Sign Flag (`out[-1] == True`)
+    
     ```
     >>> flaged_sub(u8(0), 1)
     ('11111111', Flags(of=true, zf=false, sf=true))
     ```
+    
     It is equivalent of `flaged_add(a, arithmetic_neg(b))`
     """
     ...
@@ -89,6 +92,7 @@ def cast(binary: Binary, to_type: str) -> Binary:
     >>> cast(i8(-1), 'unsigned').int()
     255
     ```
+
     ## similar functions
     * `convert` - convert binary to another sign behavior, rises if overflow
     * `extend_to_signed` - extend binary to signed behavior, adds bit if signed number cannot handle
@@ -107,9 +111,10 @@ def convert(binary: Binary, to_type: str) -> Binary:
     127
     >>> convert(u8(128), 'signed').int()
     # ** rises ** signed 8bit value cannot handle 128
-    >>> convert(u8(-1), 'unsigned').int()
+    >>> convert(i8(-1), 'unsigned').int()
     # ** rises ** unsigned numbers cannot handle negative values
     ```
+
     ## similar functions
     * `cast` - bit-wise cast to other sign behavior
     * `extend_to_signed` - extend binary to signed behavior, adds bit if signed number cannot handle
@@ -122,7 +127,7 @@ def convert(binary: Binary, to_type: str) -> Binary:
 def extend_to_signed(binary: Binary) -> Binary:
     """
     ## extend_to_signed
-    Extend binary to signed behavior, adds bit if signed number cannot handle
+    Extend binary to signed behavior, adds bit if conversion is not possible for original size
     ```
     >>> extend_to_signed(u8(127)).int()
     127
@@ -131,6 +136,7 @@ def extend_to_signed(binary: Binary) -> Binary:
     >>> extend_to_signed(u8(-1)).int()
     -1
     ```
+
     ## similar functions
     * `cast` - bit-wise cast to other sign behavior
     * `convert` - convert binary to another sign behavior, rises if overflow
@@ -142,13 +148,14 @@ def extend_to_signed(binary: Binary) -> Binary:
 def pad_zeros(binary: Binary, size: int) -> Binary:
     """
     ## pad_zeros
-    Pad binary with zeros to given size. Ignores sign_behavior
+    Pad binary with zeros to given size. Ignores sign_behavior. Trims if size is smaller than original size, discarding remaining bits.
     ```
-    >>> pad_zeros(u8(1), 16).int()
-    1
     >>> pad_zeros(u8(1), 16).bin()
-    '0000000000000001'
+    '00000000 00000001'
+    >>> pad_zeros(u32(1), 16).bin()
+    '00000000 00000001'
     ```
+
     ## similar functions
     * `cast` - bit-wise cast to other sign behavior
     * `convert` - convert binary to another sign behavior, rises if overflow
@@ -160,12 +167,10 @@ def pad_zeros(binary: Binary, size: int) -> Binary:
 def pad_ones(binary: Binary, size: int) -> Binary:
     """
     ## pad_ones
-    Pad binary with ones to given size. Ignores sign_behavior
+    Pad binary with ones to given size. Ignores sign_behavior. Trims if size is smaller than original size, discarding remaining bits.
     ```
-    >>> pad_ones(u8(1), 16).int()
-    1
     >>> pad_ones(u8(1), 16).bin()
-    '1111111111111111'
+    '11111111 11111111'
     ```
     ## similar functions
     * `cast` - bit-wise cast to other sign behavior
@@ -178,14 +183,15 @@ def pad_ones(binary: Binary, size: int) -> Binary:
 def pad_sign_extend(binary: Binary, size: int) -> Binary:
     """
     ## pad_sign_extend
-    Pad binary with `sign_extending_bit` to given size. Ignores sign_behavior
+    Pad binary with last bit to given size. Ignores sign_behavior. Trims if size is smaller than original size, discarding remaining bits.
+    This function ignores sign_behavior of binary. So even if binary is unsigned, it will be treated as signed. If you need normal padding, use slicing or `pad_zeros` or `pad_ones`. 
     ```
     >>> pad_sign_extend(u8(1), 16)
-    '0000000000000001'
+    '00000000 00000001'
     >>> pad_sign_extend(u8(1), 16)
-    '0000000000000001'
-    >>> pad_sign_extend(u8(-1), 16)
-    '1111111111111111'
+    '00000000 00000001'
+    >>> pad_sign_extend(i8(-1), 16)
+    '11111111 11111111'
     ```
     ## similar functions
     * `cast` - bit-wise cast to other sign behavior
