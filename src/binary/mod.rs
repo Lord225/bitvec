@@ -840,6 +840,23 @@ impl BinaryBase
     {
         self.data = val.bit_concat(&self.data).to_bit_vec();
     }
+
+    pub fn join(&self, val: &PyAny) -> PyResult<BinaryBase> {
+        use super::arithm::concat::append_any;
+        let joiner = &self.data;
+        
+        let mut output = BinaryBase::from_data(bv::BitVec::new());
+        if let Some((last, collection)) = val.iter()?.into_iter().collect::<PyResult<Vec<_>>>()?.split_last() 
+        {
+            for values in collection 
+            {
+                append_any(&mut output, values)?;
+                output.append_slice(joiner);
+            }
+            append_any(&mut output, last)?;
+        }
+        Ok(output)
+    }
 }
 
 impl From<&BinaryBase> for i64 {

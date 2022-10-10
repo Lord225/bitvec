@@ -387,7 +387,13 @@ class Binary:
         Prepend is generally slower then append. If you need to `preprend` multiple times consider calling `append` instead and reversing the number using `[::-1]`
         """
         ...
-
+    def join(self, value: Iterable[bool|int|str|Binary]):
+        """
+        ## join
+        Uses `self` to join values inside iterable. It is simmilar to `str.join`.
+        >>> Binary('0').join(["001", "111", "111"])
+        >>> '00101110111'
+        """
     def hex(self, prefix=True) -> str:
         """
         ## hex

@@ -435,3 +435,13 @@ def arithmetic_wrapping_rsh(a: Binary, b: Any) -> Binary:
     '11110010'
     ```
     """
+def concat(*args: Any) -> Binary:
+    """
+    ## concat
+    Concats `*args` into one long `Binary` starting from right.
+    >>> concat("000", "001")
+    >>> '000001'
+
+    You can check function `arithm.concat`
+    """
+    ...

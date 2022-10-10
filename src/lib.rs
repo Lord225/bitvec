@@ -7,7 +7,7 @@
 use std::cmp::Ordering;
 
 use pyo3::pyclass::CompareOp;
-use pyo3::{prelude::*, types};
+use pyo3::{prelude::*, types, IntoPy};
 use pyo3::exceptions;
 use pyo3::types::IntoPyDict;
 
@@ -373,7 +373,11 @@ impl Binary
         }
         Ok(())
     }
-    
+
+    pub fn join(&self, obj: &PyAny) -> PyResult<PyObject> {
+        Self::wrap_object(self.inner.join(obj))
+    }
+
     /// Returns represenation in hex (with or without prefix depeding on args)
     /// `kwargs` -> prefix
     /// `args` -> 1st argument - boolean
