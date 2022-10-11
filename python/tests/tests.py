@@ -669,4 +669,19 @@ class Utils(unittest.TestCase):
         from bitvec.alias import u1024
         self.assertEqual((~u1024()).leading_ones(), 1024)
         self.assertEqual((~u1024()[:1000]).leading_ones(), 1000)
-    
+
+class TestConcat(unittest.TestCase):
+    def test_concat(self):
+        self.assertEqual(arithm.concat("001","001"), Binary("001 001"))
+        self.assertEqual(arithm.concat("","001", ""), Binary("001"))
+        self.assertEqual(arithm.concat("001", 0, "1"), Binary("0011"))
+        self.assertEqual(arithm.concat("001", u4(0), "1"), Binary("001 0000 1"))
+        self.assertEqual(arithm.concat("", ""), Binary(""))
+    def test_join(self):
+        from bitvec.alias import u0
+
+        self.assertEqual(u0().join(["000", "001", "010"]), Binary("010 001 000"))
+        self.assertEqual(Binary('1').join(["000", "001", "010"]), Binary("010 1 001 1 000"))
+        self.assertEqual(u0().join([]), Binary(""))
+        self.assertEqual(Binary('1').join([]), Binary(""))
+        self.assertEqual(Binary('1').join(["0"]), Binary("0"))
