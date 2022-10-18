@@ -2,7 +2,7 @@ from typing import Any, Iterable, Literal, Optional, overload
 from . import arithm
 
 class Binary:
-    data: bytes
+    raw_bytes: bytes
     len: int
     sb: Literal['unsigned', 'signed']
 
@@ -514,7 +514,7 @@ class Binary:
         Returns iterator that iterates over bytes. additional bits will be padded with sign exteding bit. It is alias for `__iter__` method
         >>> [i for i in Binary("101").bytes()]
         ['00000101']
-        >>> for b7,b6,b5,b4,b3,b2,b1,b0 in Binary("101").bytes(): print(b1,b2,b3,b4,b5,b6,b7,b8)
+        >>> for b7,b6,b5,b4,b3,b2,b1,b0 in Binary("101").bytes(): print(b0,b1,b2,b3,b4,b5,b6,b7)
         """
         ...
     def iter(self, block_size: int) -> BinaryIterator:

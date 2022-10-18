@@ -241,19 +241,10 @@ impl Binary
     }
 
     #[getter]
-    pub fn data(&self) -> PyObject {
-        let mut bytes  = self.inner
-        .get_slice(
-            &types::PySliceIndices::new(0, 
-                                        self.len().next_multiple_of(u32::BITS.try_into().unwrap()) as isize,
-                                        1))
-        .unwrap()
-        .into_boxed_slice(); // for signed mask bitvec
-    
-        let (_, bytes, _) = unsafe { bytes.align_to_mut::<u8>() };
-
-        Python::with_gil(|py| types::PyBytes::new(py, bytes).to_object(py))
+    pub fn raw_bytes(&self) -> PyObject {
+        data::<{u8::BITS}>(self)
     }
+
     #[getter]
     pub fn len(&self) -> usize {
         self.inner.len().try_into().unwrap()
@@ -400,7 +391,7 @@ impl Binary
         Python::with_gil(|py| {
             let python_int: PyObject = 0.into_py(py);
             
-            python_int.call_method(py, "from_bytes", (self.data(), "little"), Some(vec![("signed", self.sign_behavior() == "signed")].into_py_dict(py)))
+            python_int.call_method(py, "from_bytes", (data::<{u32::BITS}>(self), "little"), Some(vec![("signed", self.sign_behavior() == "signed")].into_py_dict(py)))
         }) // from_bytes(self._data, "big", {"signed": self.sign_behavior() == "signed"})
     }
     
@@ -692,6 +683,23 @@ impl Binary
         Ok(utility::trailing_ones(&self))
     }
 }
+
+fn data<const SIZE: u32>(_self: &Binary) -> PyObject 
+{
+    let size = _self.len().next_multiple_of(SIZE as usize);
+    let mut bytes  = _self.inner
+        .get_slice(
+            &types::PySliceIndices::new(0, 
+                                        size as isize ,
+                                        1))
+        .unwrap()
+        .into_boxed_slice(); // for signed mask bitvec
+    
+        let (_, bytes, _) = unsafe { bytes.align_to_mut::<u8>() }; 
+
+        Python::with_gil(|py| types::PyBytes::new(py, &bytes[..size/8]).to_object(py))
+}
+
 
 impl From<Binary> for PyObject {
     fn from(binary: Binary) -> PyObject {
