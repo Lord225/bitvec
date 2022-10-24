@@ -2,7 +2,7 @@ import unittest
 from bitvec import Binary
 from bitvec import arithm
 from bitvec import alias
-from bitvec.alias import u4, i4, u7, u8, i8, i16
+from bitvec.alias import u0, u1, u4, i4, u7, u8, i8, i16, unsigned_bin
 
 # python -m unittest python\tests\tests.py
 
@@ -347,6 +347,13 @@ class TestAssigns(unittest.TestCase):
         x, y = gen()
         x[::3] = y    #            1--0--1
         self.assertEqual(str(x), "11000011")
+    def test_split(self):
+        self.assertEqual(u8('0000 1101').split_at(4), (u4('1101'), u4('0000')))
+        self.assertEqual(u0('').split_at(0), (u0(''), u0('')))
+        self.assertEqual(u1('1').split_at(0), (u0(''), u1('1')))
+        self.assertEqual(u1('1').split_at(1), (u1('1'), u0('')))
+        self.assertEqual(u8('00 001101').split_at(-2), (unsigned_bin('001101'), unsigned_bin('00')))
+
 
 class TestCompare(unittest.TestCase):
     def test_unsigned_cmps(self):

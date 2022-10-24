@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use crate::binary::BinaryBase;
 use pyo3::{prelude::*, types::PySliceIndices};
 

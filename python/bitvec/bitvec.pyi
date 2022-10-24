@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Literal, Optional, overload
+from typing import Any, Iterable, Literal, Optional, Tuple, overload
 from . import arithm
 
 class Binary:
@@ -499,6 +499,17 @@ class Binary:
         """
         ...
     
+    def split_at(self, index: int) -> Tuple[Binary, Binary]:
+        """
+        ## split_at
+        Splits number at specified index. Returns tuple of two numbers `(low, high)`.
+        It is aliast for `(self[:index], self[index:])` but might be faster.
+
+        >>> Binary("1111 1111 0000").split_at(4)
+        ('0000', '1111 1111')
+        """
+        ...
+
     def bits(self) -> BinaryIterator: 
         """
         ## bits
@@ -508,21 +519,28 @@ class Binary:
         >>> b0, b1, b2 = Binary("101")
         """
         ...
-    def bytes(self) -> BinaryIterator:
+    def bytes(self, extend: bool = True) -> BinaryIterator:
         """
         ## bytes
         Returns iterator that iterates over bytes. additional bits will be padded with sign exteding bit. It is alias for `__iter__` method
+        if extend is set to False last item will have lenght equal to `len(self)%8` (will not be padded)
+        
         >>> [i for i in Binary("101").bytes()]
         ['00000101']
         >>> for b7,b6,b5,b4,b3,b2,b1,b0 in Binary("101").bytes(): print(b0,b1,b2,b3,b4,b5,b6,b7)
+        >>> [i for i in Binary("000 0000 0000").bytes(extend=False)]
+        ['00000000', '000']
+        >>> [i for i in Binary("000 0000 0000").bytes(extend=True)]
+        ['00000000', '00000000']
         """
         ...
-    def iter(self, block_size: int) -> BinaryIterator:
+    def iter(self, block_size: int, extend: bool = True) -> BinaryIterator:
         """
         ## iter
         Returns iterator that iterates over blocks of size block_size. 
         
-        Additional bits will be padded with sign exteding bit.
+        Additional bits will be padded with sign exteding bit if extend is set to True.
+        If extend is set to False last item will have lenght equal to `len(self)%block_size` (will not be padded)
         
         Functions `bit` and `bytes` are aliases for this method with `block_size` set to 1 or 8
         >>> [i for i in Binary("101").iter(2)]

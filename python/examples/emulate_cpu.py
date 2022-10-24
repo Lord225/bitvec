@@ -6,15 +6,24 @@ from bitvec.alias import u16, i16, u8, i6, u3, u4
 class MyEmulator:
     PC = 7
     FLAGS = 6
+
     def __init__(self):
-        self.registers = [u16() for _ in range(8)]  # registers are 16 bit
-        self.rom = np.zeros((1024), dtype='uint16') 
+        # registers are 16 bit (initialized with 0)
+        self.registers = [u16() for _ in range(8)]
+        
+        # memory for rom 
         self.rom = np.zeros((1024), dtype='uint16')
+        
+        # memory for ram 
+        self.rom = np.zeros((1024), dtype='uint16')
+
+        # flag that indicates if emulator should run
         self.should_run = True
+    
     def load_rom(self, instructions):
         for i, instruction in enumerate(instructions):
             self.rom[i] = int(instruction)
-    def set_flag(self, of):
+    def set_flag(self, of: bool):
         self.registers[self.FLAGS] = u16(1 if of else 0)
     def execute(self):
         instr = u16(self.rom[self.registers[self.PC].int()])
@@ -31,14 +40,16 @@ class MyEmulator:
         #print(self.registers[self.PC].int(), opcode.hex(), [r.hex() for r in self.registers], sep='\t')
         
         if opcode == 1: 
-            imm = instr[7:7+8] # take 8 bits as it is imm value
+            # take first byte as it is imm value
+            imm = instr.low_byte()
             self.load_imm_low(reg1, imm)
         elif opcode == 2:
             self.add_regs(reg1, reg2)
         elif opcode == 3:
             self.sub_regs(reg1, reg2)
         elif opcode == 4:
-            offset = arithm.cast(instr[10:16], 'signed').int() # cast imm to signed and use it as offset
+            # cast imm to signed and use it as offset
+            offset = arithm.cast(instr[10:16], 'signed').int()
             self.jge(reg1, reg2, offset)
         elif opcode == 5:
             offset = arithm.cast(instr[10:16], 'signed').int()
@@ -52,7 +63,7 @@ class MyEmulator:
         elif opcode == 0:
             self.nop()
         else:
-            raise NotImplementedError
+            raise NotImplementedError # todo more commands
 
         self.registers[self.PC] += 1
 
@@ -62,21 +73,27 @@ class MyEmulator:
     # instructions 
     #########################
     def load_imm_low(self, reg: int, imm: Binary):
-        self.registers[reg][:8] = u8(imm)
+        # [:8] sets only the first 8 bits of the register to imm
+        self.registers[reg][:8] = imm
+    
     def mov(self, reg1, reg2):
         # [:] ensuers that regiser size is not changed
         self.registers[reg1][:] = self.registers[reg2]
     
     def add_regs(self, reg1: int, reg2: int):
+        # overflowing add will return the result and a flag if overflow occured
         self.registers[reg1][:], of = arithm.overflowing_add(self.registers[reg1], self.registers[reg2])
         self.set_flag(of)
+    
     def sub_regs(self, reg1: int, reg2: int):
         self.registers[reg1][:], of = arithm.overflowing_sub(self.registers[reg1], self.registers[reg2])
         self.set_flag(of)
     
     def jge(self, reg1: int, reg2: int, offset: int):
-        if self.registers[reg1] >= self.registers[reg2] == 0:
+        # compare registers as unsigned values bsc we declared them as unsigned
+        if self.registers[reg1] >= self.registers[reg2]:
             self.registers[self.PC][:] = self.registers[self.PC] + arithm.cast(i16(offset), 'unsigned')
+    
     def jne(self, reg1: int, reg2: int, offset: int):
         if self.registers[reg1] != self.registers[reg2]:
             self.registers[self.PC][:] = self.registers[self.PC] + arithm.cast(i16(offset), 'unsigned')
@@ -95,6 +112,7 @@ if __name__ == '__main__':
     r   = u3
     imm = u8
     j   = i6
+    # {"nop":0000, "load":0001, ... }
     op  = { opcode: u4(n) for n, opcode in enumerate(['nop', 'load', 'add', 'sub', 'jge', 'jne', 'print', 'stop', 'mov']) }
 
     # instruction leyout
@@ -105,18 +123,18 @@ if __name__ == '__main__':
 
     # fibonnaci sequence
     program = [
-        arithm.concat(imm(0),         r(1), op['load'] )[:16], # load 1 into r1
-        arithm.concat(imm(1),         r(2), op['load'] )[:16], # load 1 into r2
-        arithm.concat(imm(15),        r(3), op['load'] )[:16], # load 15 into r3
-        arithm.concat(imm(1),         r(4), op['load'] )[:16], # load 1 into r4
-        arithm.concat(          r(1), r(2), op['add']  )[:16], # add r1 to r2
-        arithm.concat(                r(2), op['print'])[:16], # print r2
-        arithm.concat(          r(4), r(3), op['sub']  )[:16], # sub 1 from r3
-        arithm.concat(          r(1), r(5), op['mov']  )[:16], # mov r1 to r5
-        arithm.concat(          r(2), r(1), op['mov']  )[:16], # mov r2 to r1
-        arithm.concat(          r(5), r(2), op['mov']  )[:16], # mov r5 to r2
-        arithm.concat(j(-7),    r(4), r(3), op['jne']  )[:16], # jne r3, r4, -6
-        arithm.concat(                      op['stop'] )[:16], # stop
+        arithm.concat(imm(0),         r(1), op['load'] ), # load 1 into r1
+        arithm.concat(imm(1),         r(2), op['load'] ), # load 1 into r2
+        arithm.concat(imm(15),        r(3), op['load'] ), # load 15 into r3
+        arithm.concat(imm(1),         r(4), op['load'] ), # load 1 into r4
+        arithm.concat(          r(1), r(2), op['add']  ), # add r1 to r2
+        arithm.concat(                r(2), op['print']), # print r2
+        arithm.concat(          r(4), r(3), op['sub']  ), # sub 1 from r3
+        arithm.concat(          r(1), r(5), op['mov']  ), # mov r1 to r5
+        arithm.concat(          r(2), r(1), op['mov']  ), # mov r2 to r1
+        arithm.concat(          r(5), r(2), op['mov']  ), # mov r5 to r2
+        arithm.concat(j(-7),    r(4), r(3), op['jne']  ), # jne r3, r4, -6
+        arithm.concat(                      op['stop'] ), # stop
     ]
 
     machine.load_rom(program)

@@ -6,7 +6,7 @@
 
 use std::cmp::Ordering;
 
-use pyo3::pyclass::CompareOp;
+use pyo3::basic::CompareOp;
 use pyo3::{prelude::*, types, IntoPy};
 use pyo3::exceptions;
 use pyo3::types::IntoPyDict;
@@ -32,6 +32,7 @@ pub struct BinaryIterator
     inner: Py<Binary>,
     chunk_size: usize,
     index: usize,
+    extend: bool,
 }
 
 // Arg Parsing
@@ -479,23 +480,31 @@ impl Binary
         arithm::bitwise::bitwise_not(_self)
     }
 
-    pub fn iter<'a>(self_: PyRef<'_, Self>, block_size: isize) -> PyResult<PyObject> 
+    #[args(kwargs = "**")] 
+    pub fn iter<'a>(self_: PyRef<'_, Self>, block_size: isize,  kwargs: Option<&types::PyDict>) -> PyResult<PyObject> 
     {
+        fn parse_kwargs(kwargs: Option<&types::PyDict>) -> bool {
+            if let Some(kwargs) = kwargs {
+                return kwargs.get_item("extend").and_then(|x| x.extract::<bool>().ok()).unwrap_or(true);
+            }
+
+            return true; // Default
+        }
         Python::with_gil(|py| {
             let slf = unsafe { Py::from_borrowed_ptr(py, self_.into_ptr()) } ;
-            let iter = BinaryIterator::new(slf, block_size)?;
+            let iter = BinaryIterator::new(slf, block_size, parse_kwargs(kwargs))?;
 
             Ok(iter.into_py(py))
         })
     }
-    
+    #[args(kwargs = "**")]    
+    pub fn bytes<'a>(self_: PyRef<'_, Self>,  kwargs: Option<&types::PyDict>) -> PyResult<PyObject> 
+    {
+        Self::iter(self_, 8, kwargs)
+    }
     pub fn bits<'a>(self_: PyRef<'_, Self>) -> PyResult<PyObject> 
     {
-        Self::iter(self_, 1)
-    }
-    pub fn bytes<'a>(self_: PyRef<'_, Self>) -> PyResult<PyObject> 
-    {
-        Self::iter(self_, 8)
+        Self::iter(self_, 1, None)
     }
     pub fn __iter__(self_: PyRef<'_, Self>) -> PyResult<PyObject> 
     {
@@ -561,12 +570,10 @@ impl Binary
             let bit = self.inner.get_bit(index)?;
             return Ok(Python::with_gil(|py| bit.into_py(py)));
         }
-
         // slice
         if let Ok(slice) = index.extract::<&types::PySlice>() {
             return Ok(self.slice(&slice.unpack()?)?);
         }
-        
         // indeces
         if let Ok(iterator) = index.iter() {
             return Self::wrap_object(Ok(binary::BinaryBase::from_data(self.inner.get_indices(iterator)?)));
@@ -616,8 +623,13 @@ impl Binary
         }
 
         return Err(exceptions::PyTypeError::new_err(format!("Invalid index type {}", index)));
-    }   
+    }
+    pub fn split_at(&self, idx: isize) -> PyResult<(PyObject, PyObject)>{
+        let low = self.inner.get_slice(&types::PySliceIndices::new(0, idx, 1))?;
+        let hig = self.inner.get_slice(&types::PySliceIndices::new(idx, self.len().try_into().unwrap(), 1))?;
 
+        Ok((Self::wrap_object(Ok(binary::BinaryBase::from_data(low)))?, Self::wrap_object(Ok(binary::BinaryBase::from_data(hig)))?))
+    } 
 
     // Utility
     pub fn find(&self, sub: &PyAny) -> PyResult<Option<usize>> {
@@ -690,7 +702,7 @@ fn data<const SIZE: u32>(_self: &Binary) -> PyObject
     let mut bytes  = _self.inner
         .get_slice(
             &types::PySliceIndices::new(0, 
-                                        size as isize ,
+                                        size as isize,
                                         1))
         .unwrap()
         .into_boxed_slice(); // for signed mask bitvec
@@ -708,12 +720,13 @@ impl From<Binary> for PyObject {
 }
 
 impl BinaryIterator {
-    pub fn new(binary: Py<Binary>, chunk_size: isize) -> PyResult<Self> 
+    pub fn new(binary: Py<Binary>, chunk_size: isize, extend: bool) -> PyResult<Self> 
     {
         return Ok(Self {
             inner: binary,
             index: 0,
-            chunk_size: chunk_size.try_into().unwrap()
+            chunk_size: chunk_size.try_into().unwrap(),
+            extend: extend,
         });
     }
 }
@@ -726,6 +739,7 @@ impl BinaryIterator {
                 index: 0,
                 inner: self.inner.clone(),
                 chunk_size: self.chunk_size,
+                extend: self.extend,
             }.into_py(py))
         })
     }
@@ -736,8 +750,14 @@ impl BinaryIterator {
             if self.index >= inner.len() {
                 return Ok(None);
             }  
+
             let start = self.index.try_into().unwrap();
-            let stop = (self.index + self.chunk_size).try_into().unwrap();
+
+            let stop = if self.extend || self.index + self.chunk_size <= inner.len() {
+                (self.index + self.chunk_size).try_into().unwrap()
+            } else {
+                inner.inner.len().try_into().unwrap()
+            };
 
             let slice = inner.slice(&types::PySliceIndices::new(start, stop, 1))?;
             self.index += self.chunk_size;

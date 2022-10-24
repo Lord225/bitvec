@@ -175,7 +175,7 @@ impl BinaryBase
                     13 => 'd',
                     14 => 'e',
                     15 => 'f',
-                    _ => unreachable!("Invalid chunk"),
+                    _ => unreachable!("Invalid Chunk Value"),
                 } as u8;
             }
             chars
@@ -189,6 +189,7 @@ impl BinaryBase
                 str.push(chars[i]);
             }
         }
+
         #[inline(always)]
         fn push_all(str: &mut Vec<u8>, chars: [u8; 8])
         {
@@ -229,6 +230,7 @@ impl BinaryBase
         }
         
     }
+
     /// Returns a string representation of the binary in hex. Pads ramaining bits with zeros. if `prefix` is true adds `0x`
     /// Uses `format` to pad bits in specified pattern. 
     /// Function while iterating over bits will add coresponding character from `format.1` to the output string after every `format.0` 
@@ -280,6 +282,7 @@ impl BinaryBase
     {
         self.to_string_formatted(&[], '1' as u8, '0' as u8, prefix) 
     }
+
     /// Returns a string representation of the binary Using `1` to represend high state and `0` to represent low state, will add spaces every 8th bit.
     pub fn to_string_formatted_default(&self) -> String
     {
@@ -312,6 +315,7 @@ impl BinaryBase {
         {
             data.bit_slice(range..).any()
         }
+
         fn check_signed(data: &bv::BitVec<u32>, range: u64) -> bool
         {
             if range == 0 {
@@ -326,6 +330,7 @@ impl BinaryBase {
                 data.bit_slice(range..).any()
             }
         }
+
         // 1
         if range <= self.data.len()
         {
@@ -581,6 +586,7 @@ impl BinaryBase {
         
         return Ok(binary);
     }
+
     /// Takes Python Iterator and uses it as bitvec data
     /// 
     pub fn parse_bitvec_from_iterable(mut object: &types::PyIterator, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
@@ -605,6 +611,7 @@ impl BinaryBase {
 
         return Ok(binary);
     }
+
     /// Constructior that wraps raw `BitVec` inside `BinaryBase`
     pub fn parse_bitvec_from_slice(object: bv::BitVec<u32>, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self> 
     {
@@ -629,6 +636,7 @@ impl BinaryBase
         }
         return Ok(index);
     }
+
     /// Flattening uses special value `i64::MAX` to represent `None` provied value in python (so it is assumed to be last index)
     fn flatten_index(&self, index: isize) -> usize
     {
@@ -649,6 +657,9 @@ impl BinaryBase
         let stop: u64  = self.flatten_index(slice.stop).try_into().unwrap();
         let step       = slice.step;
 
+        if step == 0 {
+            return Err(exceptions::PyIndexError::new_err("Slice step cannot be zero"));
+        }
 
         // Handle this stupid python's edge case where for negative step
         if step < 0 {
@@ -657,7 +668,6 @@ impl BinaryBase
             BinaryRange::new(start, stop, step, self.len())
         }
     }
-
 
     pub fn get_bit(&self, index: isize) -> PyResult<bool> {
         let index = self.flatten_index(index);
@@ -699,7 +709,7 @@ impl BinaryBase
         };
     
         let out = match range.step {
-            0   => Err(exceptions::PyIndexError::new_err(format!("Step equal zero"))),
+            0   => Err(exceptions::PyIndexError::new_err(format!("Step cannot be zero"))),
             1   => Ok(concated.to_bit_vec()), // specialization for most common case
             -1  => Ok(quick_reverse(concated.to_bit_vec())), // specialization for common case (reversing with ::-1)
             0.. => {
