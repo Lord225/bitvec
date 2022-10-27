@@ -173,6 +173,7 @@ Note that slicing makes a copy of the vector
 * `extended_low()` - first 16bits
 * `extended_high()` - second 16bits
 * `get_byte(index: int)` - nth group of 8-bit chunks.
+* `split_at(index: int)` - split number at nth bit.
 ### Information about number
 * `sign_behavior()` - The way that number behaves on extending and converstions `signed` or `unsigned` 
 * `maximal_value()` - Maximal possibe value than can be hold in this representation and lenght
@@ -195,7 +196,8 @@ Note that slicing makes a copy of the vector
 * `count_ones()` - count how many ones is in number
 ### Modifying
 * `append(Binary|bool|str|int)` - Appends value to the end
-* `prepend(Binary|bool|str|int)` - Appends vakue to the start 
+* `prepend(Binary|bool|str|int)` - Appends vakue to the start
+* `join(Binary|bool|str|int)` - Joins binary numbers like str.join does
 ### Iterating
 * `bits()` - iterates over bits
 * `bytes()` - iterates over bytes
@@ -265,16 +267,45 @@ Or over bytes:
 ```
 Or over any other chunk of bits with `iter` function. For more sophisticated iteration you can use `itertools` or just play with indexing and slicing.
 
-## Arithmetic  
+## Arithm  
 In module `arithm` there are functions that can be used to perform arithmetic/logical operations on binary numbers. That's includes
-* Addition - `wrapping_add` and others
-* Subtraction - `wrapping_sub` and others
-* Multiplication - `wrapping_mul` and others
-* Shifts - `overflowing_lsh`, `wrapping_rsh` and others
-* Bitwise operations - `bitwise_and`, `bitwise_or` and others
-* Casting & Conversions - `cast`, `pad_zeros` and others
-
-Import this submodule and check all of them!
+### add
+* `flaged_add(a: Binary, b: Any) -> Tuple[Binary, Flags]:` - add, and return with flags (of, zf, sf)
+* `overflowing_add(a: Binary, b: Any) -> Tuple[Binary, bool]:` - add and return overflow flag too
+* `wrapping_add(a: Binary, b: Any) -> Binary:` - add and return only result
+### sub
+* `flaged_sub(a: Binary, b: Any) -> Tuple[Binary, Flags]:` - sub, and return with flags (of, zf, sf)
+* `overflowing_sub(a: Binary, b: Any) -> Tuple[Binary, bool]:` - sub and return overflow flag too
+* `wrapping_sub(a: Binary, b: Any) -> Binary:` - sub and return only result
+### converting
+* `cast(binary: Binary, to_type: str) -> Binary:` - change sb without any checks ('transmutate' value)
+* `convert(binary: Binary, to_type: str) -> Binary:` - change sb and rise if conversion is impossible
+* `extend_to_signed(binary: Binary) -> Binary:` - change to sb and add sign bit if nessesery
+* `pad_zeros(binary: Binary, size: int) -> Binary:` - add zeros to match the lenght
+* `pad_ones(binary: Binary, size: int) -> Binary:` - add ones to match the lenght
+* `pad_sign_extend(binary: Binary, size: int) -> Binary:` - add sign extending bits to match the lenght
+* `concat(*args: Any) -> Binary:` - concats args into one long binary
+### Neg
+* `arithmetic_neg(binary: Binary) -> Binary:` - negates number with 2's logic
+* `bitwise_neg(binary: Binary) -> Binary:` - flips bits
+### bitwise
+* `bitwise_or(binary: Binary, b: Any) -> Binary:`
+* `bitwise_and(binary: Binary, b: Any) -> Binary:`
+* `bitwise_xor(binary: Binary, b: Any) -> Binary:`
+* `bitwise_xnor(binary: Binary, b: Any) -> Binary:`
+* `bitwise_nand(binary: Binary, b: Any) -> Binary:`
+* `bitwise_nor(binary: Binary, b: Any) -> Binary:`
+### multiply
+* `multiply(binary: Binary, b: Any) -> Binary:` - mul and returns whole result
+* `overflowing_mul(binary: Binary, b: Any) -> Tuple[Binary, Binary]:` - mul and returns splited result
+* `wrapping_mul(binary: Binary, b: Any) -> Binary:` - mul and returns only `len(binary)` first bits
+### shifts
+* `overflowing_lsh(a: Binary, b: Any) -> Tuple[Binary, Binary]:` - left shifts, returns result and shifted out bits
+* `wrapping_lsh(a: Binary, b: Any) -> Binary:` - left shifts, returns result and discards shifted out bits
+* `logical_underflowing_rsh(a: Binary, b: Any) -> Tuple[Binary, Binary]:` - right shift padded with zeros, returns result and shifted out bits
+* `logical_wrapping_rsh(a: Binary, b: Any) -> Binary:` - right shift padded with zeros, returns result and discards shifted out bits
+* `arithmetic_underflowing_rsh(a: Binary, b: Any) -> Tuple[Binary, Binary]:` - right shift paded sign extending bits, returns result and shifted out bits
+* `arithmetic_wrapping_rsh(a: Binary, b: Any) -> Binary:` - right shift paded sign extending bits, returns result and discards shifted out bits
 
 ```py
 >>> from bitvec import arithm
