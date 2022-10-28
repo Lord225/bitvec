@@ -298,6 +298,51 @@ def bitwise_nor(binary: Binary, b: Any) -> Binary:
     ```
     """
     ...
+def bitwise_map(*args: Any, map: Binary|str|int|dict[Binary|str|int, bool]) -> Binary:
+    """
+    ## bitwise_map
+    Function that maps corresponding bits of binary numbers to boolean value using given map (sum-of-products table)
+    Each bit in `map` is diffrent term in sum-of-products table. If bit is 1, then term is present in sum. If bit is 0, then term is not present in sum.
+    It expects that `map` has atleast `2**len(args)` bits (all combinations of bits in `args`). And will pad `map` with zeros if it has less bits.
+    `map` can be an `dict` that maps terms indexes to boolean values. At the end it will be converted to one binary number used in function.
+
+    Note: `bitwise_map` is quite slow compared to other functions (order of magnitute slower) and it scales badly with number of positive terms
+
+    ### Example
+    ```
+    # 0 0 | 1
+    # 0 1 | 0
+    # 1 0 | 0
+    # 1 1 | 0
+    >>> bitwise_map('1010', '1100', map='0001') 
+    '0001'
+
+    # 0 0 | 0
+    # 0 1 | 1
+    # 1 0 | 1
+    # 1 1 | 0
+    >>> bitwise_map('1010', '1100', map='0110') # xor equivalent
+    '0110'
+
+    # 0 0 | 0
+    # 0 1 | 1
+    # 1 0 | 1
+    # 1 1 | 1
+    >>> bitwise_map('1010', '1100', map='1110') # or equivalent
+    '1110'
+
+    # 0 0 0 | 0
+    # 0 0 1 | 0
+    # ...
+    # 1 1 0 | 0
+    # 1 1 1 | 1
+    >>> bitwise_map('1010', '1100', '1110', map={'111':True}) # map all corresponding bits in args that are all one to one, (other terms are set to False)
+    '1000'
+    >>> bitwise_map('1010', '1100', '1110', map={7:True})     # insted of '111' you can use index (7) of term in sum-of-products table
+    '1000'
+    ```
+    """
+    ...
 
 def multiply(binary: Binary, b: Any) -> Binary:
     """

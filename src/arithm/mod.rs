@@ -8,6 +8,7 @@ pub mod flags;
 pub mod bitwise;
 pub mod shifts;
 pub mod concat;
+pub mod bitwise_map;
 
 pub fn register_arithm_module<'a>(_py: Python<'a>) -> PyResult<&'a PyModule> {
     let arithm = PyModule::new(_py, "arithm")?;
@@ -50,6 +51,8 @@ pub fn register_arithm_module<'a>(_py: Python<'a>) -> PyResult<&'a PyModule> {
     arithm.add_function(wrap_pyfunction!(mul::wrapping_mul, arithm)?)?;
 
     arithm.add_function(wrap_pyfunction!(concat::concat, arithm)?)?;
+
+    arithm.add_function(wrap_pyfunction!(bitwise_map::bitwise_map, arithm)?)?;
 
     return Ok(arithm);
 }

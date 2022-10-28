@@ -295,6 +295,7 @@ In module `arithm` there are functions that can be used to perform arithmetic/lo
 * `bitwise_xnor(binary: Binary, b: Any) -> Binary:`
 * `bitwise_nand(binary: Binary, b: Any) -> Binary:`
 * `bitwise_nor(binary: Binary, b: Any) -> Binary:`
+* `bitwise_map(*args: Any, map: Binary|str|int|dict[Binary|str|int, bool]) -> Binary:` - maps bits by sum-of-products table 
 ### multiply
 * `multiply(binary: Binary, b: Any) -> Binary:` - mul and returns whole result
 * `overflowing_mul(binary: Binary, b: Any) -> Tuple[Binary, Binary]:` - mul and returns splited result
