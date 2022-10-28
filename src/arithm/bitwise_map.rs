@@ -52,7 +52,7 @@ pub fn bitwise_map(args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> PyR
     if map.len() < args.len().try_into().unwrap() {
         return Err(exceptions::PyValueError::new_err("map does not contain enough terms"));
     }
-    if map.len() >= 32 {
+    if map.len() > 32 {
         return Err(exceptions::PyValueError::new_err("map is too big"));
     }
 
