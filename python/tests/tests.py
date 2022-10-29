@@ -515,7 +515,7 @@ class Operations(unittest.TestCase):
         self.assertEqual(a&1, u8('0000 0000'))
         self.assertEqual(a&2, u8('0000 0010'))
     def test_bitwise_operators_with_diffrent_sizes(self):
-        a,b = u8(6), u8(14)
+        a, _ = u8(6), u8(14)
         c, d = i4('0001'), i4('1111')
         
         self.assertEqual(a|c, u8('0000 0111'))
@@ -531,6 +531,29 @@ class Operations(unittest.TestCase):
                 ii, jj = Binary(i), Binary(j)
 
                 self.assertEqual(arithm.multiply(ii, jj).int(), i*j)
+
+    def test_bitwise_map_str_table(self):
+        self.assertEqual(arithm.bitwise_map(u4('1100'), u4('1010'), map='0000'), u4('0000'))
+        self.assertEqual(arithm.bitwise_map(u4('1100'), u4('1010'), map='0001'), u4('0001'))
+        self.assertEqual(arithm.bitwise_map(u4('1100'), u4('1010'), map='0011'), u4('0101'))
+        self.assertEqual(arithm.bitwise_map(u4('1100'), u4('1010'), map='1111'), u4('1111'))
+    
+    def test_bitwise_map_dict(self):
+        self.assertEqual(arithm.bitwise_map(u4('1100'), u4('1010'), map='0110'), arithm.bitwise_map(u4('1100'), u4('1010'), map={'00':False, '01':True, '10':True, '11':False}))
+        self.assertEqual(arithm.bitwise_map(u4('1100'), u4('1010'), map='0110'), arithm.bitwise_map(u4('1100'), u4('1010'), map={'01':True, '10':True}))
+        self.assertEqual(arithm.bitwise_map(u4('1100'), u4('1010'), map='0110'), arithm.bitwise_map(u4('1100'), u4('1010'), map={1:True, 2:True}))
+        self.assertEqual(arithm.bitwise_map(u4('1100'), u4('1010'), map='0110'), arithm.bitwise_map(u4('1100'), u4('1010'), map=6))
+
+    def test_bitwise_map_with_normal_functions(self):
+        TEST_CASES = [1,2,3,5,16,32,1024,2**31,2**32]
+        TEST_FUNCTS = [('1000', arithm.bitwise_and), ('1110', arithm.bitwise_or), ('0110', arithm.bitwise_xor), ('0111', arithm.bitwise_nand), ('0001', arithm.bitwise_nor), ('1001', arithm.bitwise_xnor)]
+
+        for i in TEST_CASES:
+            for j in TEST_CASES:
+                ii, jj = Binary(i), Binary(j)
+                for funct, funct_name in TEST_FUNCTS:
+                    self.assertEqual(arithm.bitwise_map(ii, jj, map=funct), funct_name(ii, jj), msg='{}({},{})'.format(funct_name.__name__, ii, jj))
+
     def test_mul_u4(self):
         self.assertEqual(arithm.multiply(u4('0001'), u4('0001')), u8('0000 0001'))
         self.assertEqual(arithm.multiply(u4('0010'), u4('0010')), u8('0000 0100'))
@@ -541,7 +564,6 @@ class Utils(unittest.TestCase):
         self.assertEqual(u8('0000 1010').find(5), 1)
         self.assertEqual(u8('1000 0000').find('10'), 6)
     def test_find_not_found(self):
- 
         self.assertEqual(u8('0000 0010').find('11'), None)
         self.assertEqual(u8('0000 1010').find(7), None)
         self.assertEqual(u8('1000 0000').find('0000 0000'), None)
@@ -552,12 +574,10 @@ class Utils(unittest.TestCase):
         with self.assertRaises(Exception): u8('').find(None) # type: ignore
     
     def test_find_all(self):
- 
         self.assertEqual(u8('01 01 01 01').find_all('01'), [0,2,4,6])
         self.assertEqual(u8('0101 0101').find_all('0'), [1,3,5,7])
     
     def test_find_zeros(self):
- 
         self.assertEqual(u8('0101 0101').find_zeros(), [1,3,5,7])
         self.assertEqual(u8('1111 1111').find_zeros(), [])
     def test_find_zeros_empty(self):
@@ -571,7 +591,6 @@ class Utils(unittest.TestCase):
         self.assertEqual(u1024()[:1000].find_zeros(), list(range(1000)))
     
     def test_find_ones(self):
- 
         self.assertEqual(u8('0101 0101').find_ones(), [0,2,4,6])
         self.assertEqual(u8('0000 0000').find_ones(), [])
     def test_find_ones_empty(self):
@@ -590,7 +609,6 @@ class Utils(unittest.TestCase):
         self.assertEqual(i1(-1).find_ones(), [0])
     
     def test_count_zeros(self):
- 
         self.assertEqual(u8('0101 0101').count_zeros(), 4)
         self.assertEqual(u8('1111 1111').count_zeros(), 0)
     def test_count_zeros_empty(self):
@@ -604,7 +622,6 @@ class Utils(unittest.TestCase):
         self.assertEqual(u1024()[:1000].count_zeros(), 1000)
     
     def test_count_ones(self):
- 
         self.assertEqual(u8('0101 0101').count_ones(), 4)
         self.assertEqual(u8('0000 0000').count_ones(), 0)
     def test_count_ones_empty(self):
@@ -618,7 +635,6 @@ class Utils(unittest.TestCase):
         self.assertEqual((~u1024()[:1000]).count_ones(), 1000)
 
     def test_trailing_zeros(self):
- 
         self.assertEqual(u8('0000 0000').trailing_zeros(), 8)
         self.assertEqual(u8('0000 0001').trailing_zeros(), 0)
         self.assertEqual(u8('0000 0010').trailing_zeros(), 1)
@@ -633,7 +649,6 @@ class Utils(unittest.TestCase):
         self.assertEqual(u1024()[:1000].trailing_zeros(), 1000)
 
     def test_trailing_ones(self):
- 
         self.assertEqual(u8('1111 1111').trailing_ones(), 8)
         self.assertEqual(u8('1111 1110').trailing_ones(), 0)
         self.assertEqual(u8('1111 1101').trailing_ones(), 1)
@@ -648,7 +663,6 @@ class Utils(unittest.TestCase):
         self.assertEqual((~u1024()[:1000]).trailing_ones(), 1000)
 
     def test_leading_zeros(self):
- 
         self.assertEqual(u8('0000 0000').leading_zeros(), 8)
         self.assertEqual(u8('1000 0000').leading_zeros(), 0)
         self.assertEqual(u8('0100 0000').leading_zeros(), 1)
@@ -663,7 +677,6 @@ class Utils(unittest.TestCase):
         self.assertEqual(u1024()[:1000].leading_zeros(), 1000)
     
     def test_leading_ones(self):
- 
         self.assertEqual(u8('1111 1111').leading_ones(), 8)
         self.assertEqual(u8('0111 1111').leading_ones(), 0)
         self.assertEqual(u8('1011 1111').leading_ones(), 1)

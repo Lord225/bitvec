@@ -432,8 +432,8 @@ impl BinaryBase {
         .rev()
         .collect::<Vec<char>>()
         .chunks(radix.max_size_for_u32())
-        .map(|chunk| u32::from_str_radix(&chunk.iter().rev().collect::<String>(), radix.radix()).unwrap())
-        .collect::<Vec<_>>();
+        .map(|chunk| u32::from_str_radix(&chunk.iter().rev().collect::<String>(), radix.radix()))
+        .collect::<Result<Vec<_>, _>>()?;
         
         // create & fill vector
         let mut bitvec = bv::BitVec::<u32>::with_block_capacity(chunks.len());
@@ -513,18 +513,17 @@ impl BinaryBase {
             //try calling object.to_bytes(size, "big", signed=True) if it failes (for negative powers of two) call same function but add one bit.
             if let Ok(bytes) = object.call_method(
                                           "to_bytes", 
-                                          (bit_lenght.checked_next_multiple_of(32).unwrap()/8, "big"),
+                                          (bit_lenght.checked_next_multiple_of(32).ok_or(exceptions::PyOverflowError::new_err("lenght overflowed"))?/8, "big"),
                                         Some(vec![("signed", sign_behevior=="signed")].into_py_dict(py))) {
-                (bytes, bit_lenght)
+                PyResult::Ok((bytes, bit_lenght))
             } else {
                 let bytes = object.call_method(
                                    "to_bytes", 
-                                   ((bit_lenght+1).checked_next_multiple_of(32).unwrap()/8, "big"),     
-                                 Some(vec![("signed", sign_behevior=="signed")].into_py_dict(py)))
-                      .unwrap();
-                (bytes,  bit_lenght+1)
+                                   ((bit_lenght+1).checked_next_multiple_of(32).ok_or(exceptions::PyOverflowError::new_err("lenght overflowed"))?/8, "big"),     
+                                 Some(vec![("signed", sign_behevior=="signed")].into_py_dict(py)))?;
+                PyResult::Ok((bytes,  bit_lenght+1))
             }
-        });
+        })?;
 
         
         let bytes = bytes.extract::<&[u8]>()?;
