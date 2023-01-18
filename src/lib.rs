@@ -1,9 +1,3 @@
-#![feature(is_some_with)]
-#![feature(int_roundings)]
-#![feature(type_alias_impl_trait)]
-#![feature(bigint_helper_methods)]
-
-
 use std::cmp::Ordering;
 
 use pyo3::basic::CompareOp;
@@ -696,9 +690,18 @@ impl Binary
     }
 }
 
+fn next_multiple_of(num: usize, multiple: usize) -> usize {
+    if num % multiple == 0 {
+        num
+    } else {
+        num + multiple - num % multiple
+    }
+}
 fn data<const SIZE: u32>(_self: &Binary) -> PyObject 
 {
-    let size = _self.len().next_multiple_of(SIZE as usize);
+    // let size = _self.len().next_multiple_of(SIZE as usize);
+    let size = next_multiple_of(_self.len(), SIZE as usize);
+    
     let mut bytes  = _self.inner
         .get_slice(
             &types::PySliceIndices::new(0, 

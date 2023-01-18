@@ -9,6 +9,12 @@ pub mod add_base {
     use bv::{BitVec, Bits, BitsPush};
     use pyo3::exceptions::{PyTypeError, PyValueError};
 
+    fn carring_add(a: u32, b: u32, carry: bool) -> (u32, bool) {
+        let (a, b) = a.overflowing_add(b);
+        let (c, d) = a.overflowing_add(carry as u32);
+        (c, b || d)
+    }
+
     pub fn add_binary(a: &BinaryBase, b: Option<&BinaryBase>, mut carry: bool) -> PyResult<(BinaryBase, Flags)> 
     {
         let b_ref = BinaryBase::from_data(bv::BitVec::new());
@@ -31,7 +37,7 @@ pub mod add_base {
             let a_block = if bi < a_data.block_len() { a_data.get_block(bi) } else { 0 }; 
             let b_block = if bi < b_data.block_len() { b_data.get_block(bi) } else { 0 };
 
-            let (sum, cout) = u32::carrying_add(a_block, b_block, carry);
+            let (sum, cout) = carring_add(a_block, b_block, carry);
                        
             carry = cout;
             

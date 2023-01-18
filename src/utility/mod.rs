@@ -110,12 +110,12 @@ impl<'a> std::iter::Iterator for Windows<'a> {
 pub fn find_one_rev(binary: &crate::Binary) -> Option<usize> {
     use super::binary::reduce::*;
 
-    IterableBitSlice(&binary.inner.data).into_iter().rev().position(|bit| bit)
+    IterableBitSlice::new(&binary.inner.data).into_iter().rev().position(|bit| bit)
 }
 pub fn find_zero_rev(binary: &crate::Binary) -> Option<usize> {
     use super::binary::reduce::*;
 
-    IterableBitSlice(&binary.inner.data).into_iter().rev().position(|bit| !bit)
+    IterableBitSlice::new(&binary.inner.data).into_iter().rev().position(|bit| !bit)
 }
 
 
@@ -176,12 +176,12 @@ pub fn find(binary: &crate::Binary, sub: &crate::Binary) -> PyResult<Option<usiz
 pub fn find_all_ones(binary: &crate::Binary) -> Vec<usize> {
     use super::binary::reduce::*;
 
-    IterableBitSlice(&binary.inner.data).into_iter().enumerate().filter(|(_, x)| *x).map(|(i, _)| i).collect()
+    IterableBitSlice::new(&binary.inner.data).into_iter().enumerate().filter(|(_, x)| *x).map(|(i, _)| i).collect()
 }
 pub fn find_all_zeros(binary: &crate::Binary) -> Vec<usize> {
     use super::binary::reduce::*; 
 
-    IterableBitSlice(&binary.inner.data).into_iter().enumerate().filter(|(_, x)| !*x).map(|(i, _)| i).collect()
+    IterableBitSlice::new(&binary.inner.data).into_iter().enumerate().filter(|(_, x)| !*x).map(|(i, _)| i).collect()
 }
 
 pub fn find_all(binary: &crate::Binary, sub: &crate::Binary) -> PyResult<Vec<usize>>

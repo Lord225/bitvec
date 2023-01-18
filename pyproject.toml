@@ -14,4 +14,3 @@ classifiers = [
 
 [tool.maturin]
 python-source = "python"
-unstable-flags = ["unstable-options"]

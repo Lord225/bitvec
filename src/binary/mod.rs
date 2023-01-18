@@ -113,7 +113,7 @@ impl BinaryBase
         
         let mut s = Vec::<u8>::with_capacity(self.data.len().try_into().unwrap());
 
-        for bit in IterableBitSlice(&self.data).into_iter().rev()
+        for bit in IterableBitSlice::new(&self.data.as_slice()).into_iter().rev()
         {
             if bit {
                 s.push(high);
@@ -135,7 +135,7 @@ impl BinaryBase
         }
         
         let mut s = Vec::<u8>::with_capacity(self.data.len().try_into().unwrap());
-        for bit in IterableBitSlice(&self.data).into_iter()
+        for bit in IterableBitSlice::new(&self.data).into_iter()
         {
             if bit {
                 s.push(high);
@@ -199,13 +199,18 @@ impl BinaryBase
             }
         }
 
+        fn div_ceil(a: usize, b: usize) -> usize
+        {
+            (a + b - 1) / b
+        }
+
         let mut output = Vec::with_capacity(self.len_usize()/4);
         let data = &self.data;
         let last_block = data.block_len()-1;
         
         if data.block_len() != 0 
         {
-            let bits_in_last_block = (self.len_usize() % 32).div_ceil(4);
+            let bits_in_last_block = div_ceil(self.len_usize() % 32, 4);
             let block = data.get_block(last_block);
             
             if bits_in_last_block != 0 {
@@ -491,7 +496,7 @@ impl BinaryBase {
 
         return Ok(binary);
     }
-
+    
     /// Crate a new BinaryBase object with specified size and sign behavior based on Python integer input. It behaves the same as `parse_bitvec_from_isize` but it accepts Arbitrary Sized Integers.
     /// ```py
     /// raw_bytes = object.to_bytes(size, "big", signed=True) # where size is the number of bytes in blocks that will be used (next multiple of 32) // 8) 
@@ -503,7 +508,16 @@ impl BinaryBase {
     /// * If python has diffrent alighment for bytes than rust (unlikely)
     pub fn parse_bitvec_from_long_integer(object: &types::PyLong, bit_size: Option<usize>, sign_behavior: Option<&str>) -> PyResult<Self>
     {
-        let sign_behevior = sign_behavior.unwrap_or(if object.compare(0).is_ok_and(|x|x.is_lt()) { "signed" } else { "unsigned" });
+        fn checked_next_multiple_of(n: usize, multiple: usize) -> Option<usize> {
+            let rem = n % multiple;
+            if rem == 0 {
+                Some(n)
+            } else {
+                n.checked_add(multiple - rem)
+            }
+        }
+
+        let sign_behevior = sign_behavior.unwrap_or(if object.compare(0i64).and_then(|x| Ok(x.is_lt())).unwrap_or(false) { "signed" } else { "unsigned" });
 
         let bit_lenght = bit_size.unwrap_or(object.call_method0("bit_length")?.extract::<usize>()?);
 
@@ -513,13 +527,13 @@ impl BinaryBase {
             //try calling object.to_bytes(size, "big", signed=True) if it failes (for negative powers of two) call same function but add one bit.
             if let Ok(bytes) = object.call_method(
                                           "to_bytes", 
-                                          (bit_lenght.checked_next_multiple_of(32).ok_or(exceptions::PyOverflowError::new_err("lenght overflowed"))?/8, "big"),
+                                          (checked_next_multiple_of(bit_lenght, 32).ok_or(exceptions::PyOverflowError::new_err("lenght overflowed"))?/8, "big"),
                                         Some(vec![("signed", sign_behevior=="signed")].into_py_dict(py))) {
                 PyResult::Ok((bytes, bit_lenght))
             } else {
                 let bytes = object.call_method(
                                    "to_bytes", 
-                                   ((bit_lenght+1).checked_next_multiple_of(32).ok_or(exceptions::PyOverflowError::new_err("lenght overflowed"))?/8, "big"),     
+                                   (checked_next_multiple_of(bit_lenght+1, 32).ok_or(exceptions::PyOverflowError::new_err("lenght overflowed"))?/8, "big"),     
                                  Some(vec![("signed", sign_behevior=="signed")].into_py_dict(py)))?;
                 PyResult::Ok((bytes,  bit_lenght+1))
             }
@@ -713,14 +727,14 @@ impl BinaryBase
             -1  => Ok(quick_reverse(concated.to_bit_vec())), // specialization for common case (reversing with ::-1)
             0.. => {
                 let mut out = bv::BitVec::<u32>::with_capacity(concated.bit_len()/range.step as u64);
-                for bit in IterableBitSlice(&concated).into_iter().step_by(range.step.try_into().unwrap()) {
+                for bit in IterableBitSlice::new(&concated).into_iter().step_by(range.step.try_into().unwrap()) {
                     out.push(bit);
                 }
                 Ok(out)
             },
             _ => {
                 let mut out = bv::BitVec::<u32>::with_capacity(concated.bit_len()/range.step as u64);
-                for bit in IterableBitSlice(&concated).into_iter().rev().step_by(range.step.abs().try_into().unwrap()) {
+                for bit in IterableBitSlice::new(&concated).into_iter().rev().step_by(range.step.abs().try_into().unwrap()) {
                     out.push(bit);
                 }
                 Ok(out)
