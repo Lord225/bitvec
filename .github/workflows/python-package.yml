@@ -27,7 +27,6 @@ jobs:
     - name: maturin-action
       uses: PyO3/maturin-action@v1.40.8
       with:
-        release: true
         manylinux: true
     - name: Install dependencies
       run: |
