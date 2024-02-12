@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
+        target: [x86_64, x86, armv7, ppc64le]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
@@ -35,6 +35,25 @@ jobs:
         with:
           target: ${{ matrix.target }}
           command: build --interpreter python3
+          args: --release
+          sccache: true
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.11'
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1.40.8
+        with:
+          target: x86_64-pc-windows-msvc
+          command: build --interpreter python
           args: --release
           sccache: true
       - name: Upload wheels
