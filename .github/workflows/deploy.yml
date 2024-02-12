@@ -28,7 +28,7 @@ jobs:
         run: maturin build --release --out dist --find-interpreter
       - name: Install auditwheel
         run: pip install auditwheel
-      - name: Repair wheels
+      - name: Repair wheelHs
         run: auditwheel repair dist/*.whl --plat manylinux2014_x86_64 -w dist/
       - name: Upload wheels
         uses: actions/upload-artifact@v3
