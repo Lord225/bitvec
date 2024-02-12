@@ -25,7 +25,7 @@ jobs:
       - name: Set up Docker container
         run: |
           docker pull quay.io/pypa/manylinux2014_x86_64
-          docker run -d --name my-container -v $PWD:/io quay.io/pypa/manylinux2014_x86_64
+          docker run -d --name my-container -v $PWD:/io quay.io/pypa/manylinux2014_x86_64 tail -f /dev/null
       - name: Build wheels
         run: |
           docker exec my-container bash -c "cd /io && pip install maturin"
