@@ -34,7 +34,7 @@ jobs:
         uses: PyO3/maturin-action@v1.40.8
         with:
           target: ${{ matrix.target }}
-          command: build
+          command: build --interpreter python3
           args: --release
           sccache: true
       - name: Upload wheels
