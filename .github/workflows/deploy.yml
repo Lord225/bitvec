@@ -3,7 +3,7 @@
 #
 #    maturin generate-ci github
 #
-name: CI
+name: deploy
 
 on:
   workflow_dispatch:
@@ -26,8 +26,7 @@ jobs:
         uses: PyO3/maturin-action@v1.40.8
         with:
           target: ${{ matrix.target }}
-          command: build --interpreter python3
-          args: --release
+          args: --release --out dist --find-interpreter
           sccache: true
       - name: Upload wheels
         uses: actions/upload-artifact@v3
@@ -45,8 +44,7 @@ jobs:
         uses: PyO3/maturin-action@v1.40.8
         with:
           target: x86_64-pc-windows-msvc
-          command: build --interpreter python
-          args: --release
+          args: --release --out dist --find-interpreter
           sccache: true
       - name: Upload wheels
         uses: actions/upload-artifact@v3
