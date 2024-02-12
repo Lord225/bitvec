@@ -36,5 +36,5 @@ jobs:
         python -m pip install -r requirements.txt
     - name: Test with pytest
       run: |
-        python -m unittest python\tests\tests.py
+        python -m pytest python/tests
     
