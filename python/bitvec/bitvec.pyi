@@ -498,6 +498,18 @@ class Binary:
         '00001111'
         """
         ...
+    def get_slice(self, offset: int, lenght: int) -> Binary:
+        """
+        ## get_slice
+        Returns slice of the number. Padded with sign extending bit.
+        >>> Binary("1010 0000 1111").get_slice(0, 4)
+        '1111'
+        >>> Binary("1010 0000 1111").get_slice(4, 4)
+        '0000'
+        >>> Binary("1010 0000 1111").get_slice(-4, 4)
+        '1010'
+        """
+        ...
     
     def split_at(self, index: int) -> Tuple[Binary, Binary]:
         """

@@ -9,6 +9,7 @@ pub mod bitwise;
 pub mod shifts;
 pub mod concat;
 pub mod bitwise_map;
+pub mod hamming_distance;
 
 pub fn register_arithm_module<'a>(_py: Python<'a>) -> PyResult<&'a PyModule> {
     let arithm = PyModule::new(_py, "arithm")?;
@@ -53,6 +54,8 @@ pub fn register_arithm_module<'a>(_py: Python<'a>) -> PyResult<&'a PyModule> {
     arithm.add_function(wrap_pyfunction!(concat::concat, arithm)?)?;
 
     arithm.add_function(wrap_pyfunction!(bitwise_map::bitwise_map, arithm)?)?;
+
+    arithm.add_function(wrap_pyfunction!(hamming_distance::hamming_distance, arithm)?)?;
 
     return Ok(arithm);
 }

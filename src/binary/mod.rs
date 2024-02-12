@@ -206,10 +206,10 @@ impl BinaryBase
 
         let mut output = Vec::with_capacity(self.len_usize()/4);
         let data = &self.data;
-        let last_block = data.block_len()-1;
         
         if data.block_len() != 0 
         {
+            let last_block = data.block_len()-1;
             let bits_in_last_block = div_ceil(self.len_usize() % 32, 4);
             let block = data.get_block(last_block);
             
@@ -233,7 +233,6 @@ impl BinaryBase
         } else {
             output
         }
-        
     }
 
     /// Returns a string representation of the binary in hex. Pads ramaining bits with zeros. if `prefix` is true adds `0x`

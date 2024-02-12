@@ -329,6 +329,14 @@ impl Binary
     pub fn get_byte(&self, byte_index: isize) -> PyResult<PyObject> {
         self.slice(&types::PySliceIndices::new(byte_index * 8, (byte_index + 1) * 8, 1))
     }
+    pub fn get_slice(&self, offset: isize, size: isize) -> PyResult<PyObject> {
+        if offset >= 0  {
+            self.slice(&types::PySliceIndices::new(offset, offset + size, 1))
+        } else {
+            let end = if offset + size >= 0 { self.len() as isize + offset + size } else { offset + size };
+            self.slice(&types::PySliceIndices::new(offset, end, 1))
+        }
+    }
 
     pub fn append(&mut self, obj: &PyAny) -> PyResult<()> {
         // prioritize:

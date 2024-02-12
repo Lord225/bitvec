@@ -184,10 +184,13 @@ class TestConversions(unittest.TestCase):
         self.assertEqual(value.int(), -1)
 
     def test_as_hex(self):
-        values = [(0, "0x"), (1, "0x1"), (255, "0xff"), (256, "0x100"), (2**64, "0x10000000000000000"), (2**64 - 1, "0xffffffffffffffff"), (2**65, '0x20000000000000000')]
-
-        for value, expected in values:
-            self.assertEqual(Binary(value).hex(), expected)
+        self.assertEqual(Binary(0).hex(), "0x")
+        self.assertEqual(Binary(1).hex(), "0x1")
+        self.assertEqual(Binary(255).hex(), "0xff")
+        self.assertEqual(Binary(256).hex(), "0x100")
+        self.assertEqual(Binary(2**64).hex(), "0x10000000000000000")
+        self.assertEqual(Binary(2**64 - 1).hex(), "0xffffffffffffffff")
+        self.assertEqual(Binary(2**65).hex(), '0x20000000000000000')
 
     def test_as_hex_sized(self):
         value = Binary(0, byte_lenght=2)
@@ -353,7 +356,16 @@ class TestAssigns(unittest.TestCase):
         self.assertEqual(u1('1').split_at(0), (u0(''), u1('1')))
         self.assertEqual(u1('1').split_at(1), (u1('1'), u0('')))
         self.assertEqual(u8('00 001101').split_at(-2), (unsigned_bin('001101'), unsigned_bin('00')))
+    def test_get_slice(self):
+        self.assertEqual(u8('0000 1101').get_slice(0, 4), u4('1101'))
+        self.assertEqual(u8('0000 1101').get_slice(4, 8), u8('0000 0000'))
+        self.assertEqual(u8('0000 1101').get_slice(0, 8), u8('0000 1101'))
+        self.assertEqual(u8('0000 1101').get_slice(1, 8), u8('0000 0110'))
 
+        # Negative
+        self.assertEqual(u8('0000 1101').get_slice(-4, 8), u8('0000 0000'))
+        self.assertEqual(u8('0000 1101').get_slice(-8, 4), u4('1101'))
+        self.assertEqual(u8('0000 1101').get_slice(-8, 8), u8('0000 1101'))
 
 class TestCompare(unittest.TestCase):
     def test_unsigned_cmps(self):
@@ -558,6 +570,20 @@ class Operations(unittest.TestCase):
         self.assertEqual(arithm.multiply(u4('0001'), u4('0001')), u8('0000 0001'))
         self.assertEqual(arithm.multiply(u4('0010'), u4('0010')), u8('0000 0100'))
         self.assertEqual(arithm.multiply(u4('1111'), u4('0010')), u8('0001 1110'))
+
+
+    def test_hamming_distance(self):
+        self.assertEqual(arithm.hamming_distance(u4('0000'), u4('0000')), 0)
+        self.assertEqual(arithm.hamming_distance(u4('0000'), u4('1111')), 4)
+        self.assertEqual(arithm.hamming_distance(u4('1010'), u4('1111')), 2)
+        self.assertEqual(arithm.hamming_distance(u4('1010'), u4('0101')), 4)
+        self.assertEqual(arithm.hamming_distance(u4('1010'), u4('1010')), 0)
+        # longer numbers
+        self.assertEqual(arithm.hamming_distance(u8('0000 0000'), u8('0000 0000')), 0)
+        self.assertEqual(arithm.hamming_distance(u8('0000 0000'), u8('1111 1111')), 8)
+        # very long numbers
+        self.assertEqual(arithm.hamming_distance(Binary('0'*1024), Binary('1'*1024)), 1024)
+
 class Utils(unittest.TestCase):
     def test_find(self):
         self.assertEqual(u8('0000 0010').find('1'), 1)

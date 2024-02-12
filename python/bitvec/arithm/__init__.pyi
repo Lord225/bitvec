@@ -490,3 +490,15 @@ def concat(*args: Any) -> Binary:
     You can check function `arithm.concat`
     """
     ...
+def hamming_distance(a: Binary, b: Any) -> int:
+    """
+    ## hamming_distance
+    Returns hamming distance between two binary numbers
+    ```
+    >>> hamming_distance(u8(1), u8(2))
+    2
+    >>> hamming_distance(u8(1), u8(1))
+    0
+    ```
+    """
+    ...
