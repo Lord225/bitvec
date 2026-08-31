@@ -27,7 +27,7 @@ jobs:
             3.13
             3.14
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@v1.51.0
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter
@@ -56,7 +56,7 @@ jobs:
             3.14
           architecture: ${{ matrix.target }}
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@v1.51.0
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter
@@ -83,7 +83,7 @@ jobs:
             3.13
             3.14
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@v1.51.0
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter
@@ -99,7 +99,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Build sdist
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@v1.51.0
         with:
           command: sdist
           args: --out dist
@@ -121,7 +121,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: maturin-action
-      uses: PyO3/maturin-action@v1
+      uses: PyO3/maturin-action@v1.51.0
       with:
         command: build
         args: --release --find-interpreter
@@ -144,7 +144,7 @@ jobs:
           pattern: wheels-*
           merge-multiple: true
       - name: Publish to PyPI
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@v1.51.0
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         with:
