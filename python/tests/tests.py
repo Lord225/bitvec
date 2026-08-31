@@ -149,6 +149,19 @@ class TestConstruct(unittest.TestCase):
             Binary(1, lenght=1, sign_behavior='signed')
         with self.assertRaises(Exception):
             Binary(-2, lenght=1, sign_behavior='signed')
+
+    def test_empty_signed_is_not_negative(self):
+        self.assertFalse(Binary(0, lenght=0, sign_behavior='signed').is_negative())
+
+    def test_iterator_rejects_non_positive_chunk_size(self):
+        with self.assertRaises(ValueError):
+            Binary('1').iter(0)
+        with self.assertRaises(ValueError):
+            Binary('1').iter(-1)
+
+    def test_bitwise_map_requires_map_keyword(self):
+        with self.assertRaises(TypeError):
+            arithm.bitwise_map(Binary('1'))
         
 
 class TestConversions(unittest.TestCase):

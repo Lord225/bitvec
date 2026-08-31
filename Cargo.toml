@@ -9,8 +9,12 @@ include = ["src/**", "python/**", ".cargo/config.toml", "Cargo.toml", "Cargo.loc
 name = "bitvec"
 crate-type = ["cdylib"]
 
+[features]
+default = []
+extension-module = ["pyo3/extension-module"]
+
 [dependencies]
-pyo3 = { version = "0.22", features = ["extension-module", "gil-refs"] }
+pyo3 = { version = "0.22", features = ["gil-refs"] }
 bv = "0.11.1"
 
 [package.metadata.maturin]

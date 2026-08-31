@@ -7,7 +7,9 @@ use crate::binary::*;
 #[pyfunction(signature = (*args, **kwargs))]
 pub fn bitwise_map(args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> PyResult<PyObject> 
 {
-    let map = kwargs.and_then(|kwargs| kwargs.get_item("map").ok().flatten()).expect("Map is not provided, provide map by adding `map=\"..\"` to the function call");
+    let map = kwargs
+        .and_then(|kwargs| kwargs.get_item("map").ok().flatten())
+        .ok_or_else(|| exceptions::PyTypeError::new_err("missing required keyword argument: 'map'"))?;
     let args = args.iter().collect::<Vec<_>>();
     if args.len() >= 32 {
         return Err(exceptions::PyValueError::new_err("This function can handle up to 31 arguments"));

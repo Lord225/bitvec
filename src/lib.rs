@@ -255,7 +255,7 @@ impl Binary
         self.sb()
     }
     pub fn is_negative(&self) -> bool {
-        if self.sign_behavior() == "unsigned" {
+        if self.sign_behavior() == "unsigned" || self.inner.data.bit_len() == 0 {
             return false;
         }
         return self.inner.data.get_bit(self.inner.data.bit_len() - 1);
@@ -733,12 +733,19 @@ impl From<Binary> for PyObject {
 }
 
 impl BinaryIterator {
+    fn validate_chunk_size(chunk_size: isize) -> PyResult<usize> {
+        usize::try_from(chunk_size)
+            .ok()
+            .filter(|size| *size > 0)
+            .ok_or_else(|| exceptions::PyValueError::new_err("chunk_size must be greater than zero"))
+    }
+
     pub fn new(binary: Py<Binary>, chunk_size: isize, extend: bool) -> PyResult<Self> 
     {
         return Ok(Self {
             inner: binary,
             index: 0,
-            chunk_size: chunk_size.try_into().unwrap(),
+            chunk_size: Self::validate_chunk_size(chunk_size)?,
             extend: extend,
         });
     }
@@ -790,4 +797,24 @@ fn pybytes(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_submodule(arithm::register_arithm_module(_py)?)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_signed_binary_is_not_negative() {
+        let binary = Binary {
+            inner: binary::BinaryBase::from_parts(bv::BitVec::new(), "signed".to_string()),
+        };
+        assert!(!binary.is_negative());
+    }
+
+    #[test]
+    fn iterator_rejects_non_positive_chunk_sizes() {
+        assert!(BinaryIterator::validate_chunk_size(0).is_err());
+        assert!(BinaryIterator::validate_chunk_size(-1).is_err());
+        assert_eq!(BinaryIterator::validate_chunk_size(1).unwrap(), 1);
+    }
 }
