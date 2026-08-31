@@ -1,7 +1,8 @@
 [package]
 name = "bitvec"
-version = "0.3.0"
+version = "1.0.0"
 edition = "2021"
+include = ["src/**", "python/**", ".cargo/config.toml", "Cargo.toml", "Cargo.lock", "pyproject.toml", "README.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -9,7 +10,7 @@ name = "bitvec"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.16.5", features = ["extension-module"] }
+pyo3 = { version = "0.22", features = ["extension-module", "gil-refs"] }
 bv = "0.11.1"
 
 [package.metadata.maturin]

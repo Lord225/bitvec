@@ -20,7 +20,7 @@ pub struct Binary
 }
 
 #[pyclass]
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct BinaryIterator
 {
     inner: Py<Binary>,
@@ -37,6 +37,7 @@ impl Binary
         fn parse_usize(might_be_usize: &PyAny) -> PyResult<Option<usize>> { Ok(if !might_be_usize.is_none() { Some(might_be_usize.extract::<usize>()?) } else {None}) }
         fn parse_str(might_be_str: &PyAny) -> PyResult<Option<&str>> { Ok(if !might_be_str.is_none() { Some(might_be_str.extract::<&str>()?) } else {None}) }
         
+        let args = args.iter().collect::<Vec<_>>();
         Ok(match args.as_slice() {
             [] => 
             {
@@ -74,10 +75,10 @@ impl Binary
     {
         Ok(if let Some(kwargs) = kwargs {
             (
-                kwargs.get_item("lenght").and_then(|x| Some(x.extract::<usize>().ok()?)),
-                kwargs.get_item("sign_behavior").and_then(|x| Some(x.extract::<&str>().ok()?)),
-                kwargs.get_item("byte_lenght").and_then(|x| Some(x.extract::<usize>().ok()?)),
-                kwargs.get_item("signed").and_then(|x| Some(x.extract::<bool>().ok()?)),
+                kwargs.get_item("lenght").ok().flatten().and_then(|x| x.extract::<usize>().ok()),
+                kwargs.get_item("sign_behavior").ok().flatten().and_then(|x| x.extract::<&str>().ok()),
+                kwargs.get_item("byte_lenght").ok().flatten().and_then(|x| x.extract::<usize>().ok()),
+                kwargs.get_item("signed").ok().flatten().and_then(|x| x.extract::<bool>().ok()),
             )
         }
         else
@@ -87,9 +88,10 @@ impl Binary
     }
     fn parse_prefix_kwargs_args(args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> bool
     {
+        let args = args.iter().collect::<Vec<_>>();
         match args.as_slice() {
             [value] if value.is_true().is_ok() => value.is_true().unwrap(),
-            _                => kwargs.and_then(|kwargs| kwargs.get_item("prefix"))
+            _                => kwargs.and_then(|kwargs| kwargs.get_item("prefix").ok().flatten())
                                       .and_then(|x| x.is_true().ok())
                                       .unwrap_or(true)
         }
@@ -129,7 +131,7 @@ impl Binary
             return Self::wrap(binary::BinaryBase::parse_bitvec_from_isize(object, bit_size, sign_behavior));
         }
         // from int
-        if let Ok(true) = object.is_instance_of::<types::PyLong>() {
+        if object.is_instance_of::<types::PyLong>() {
             return Self::wrap(binary::BinaryBase::parse_bitvec_from_long_integer(&object.downcast().unwrap(), bit_size, sign_behavior));
         }
         // copy constructor
@@ -192,7 +194,7 @@ impl Binary
 impl Binary
 {
     #[new]
-    #[args(args = "*", kwargs = "**")]
+    #[pyo3(signature = (object, *args, **kwargs))]
     fn py_new(object: &PyAny, args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> PyResult<Self> 
     {
         // arguments:
@@ -376,7 +378,7 @@ impl Binary
     /// `kwargs` -> prefix
     /// `args` -> 1st argument - boolean
     /// 
-    #[args(args = "*", kwargs = "**")]
+    #[pyo3(signature = (*args, **kwargs))]
     pub fn hex(&self, args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> String {
         self.inner.to_string_hex(Self::parse_prefix_kwargs_args(args, kwargs))
     }
@@ -384,7 +386,7 @@ impl Binary
     /// `kwargs` -> prefix
     /// `args` -> 1st argument - boolean
     /// 
-    #[args(args = "*", kwargs = "**")]
+    #[pyo3(signature = (*args, **kwargs))]
     pub fn bin(&self, args: &types::PyTuple, kwargs: Option<&types::PyDict>) -> String {
         self.inner.to_string_bin(Self::parse_prefix_kwargs_args(args, kwargs))
     }
@@ -482,12 +484,12 @@ impl Binary
         arithm::bitwise::bitwise_not(_self)
     }
 
-    #[args(kwargs = "**")] 
+    #[pyo3(signature = (block_size, **kwargs))]
     pub fn iter<'a>(self_: PyRef<'_, Self>, block_size: isize,  kwargs: Option<&types::PyDict>) -> PyResult<PyObject> 
     {
         fn parse_kwargs(kwargs: Option<&types::PyDict>) -> bool {
             if let Some(kwargs) = kwargs {
-                return kwargs.get_item("extend").and_then(|x| x.extract::<bool>().ok()).unwrap_or(true);
+                return kwargs.get_item("extend").ok().flatten().and_then(|x| x.extract::<bool>().ok()).unwrap_or(true);
             }
 
             return true; // Default
@@ -499,7 +501,7 @@ impl Binary
             Ok(iter.into_py(py))
         })
     }
-    #[args(kwargs = "**")]    
+    #[pyo3(signature = (**kwargs))]
     pub fn bytes<'a>(self_: PyRef<'_, Self>,  kwargs: Option<&types::PyDict>) -> PyResult<PyObject> 
     {
         Self::iter(self_, 8, kwargs)
@@ -748,7 +750,7 @@ impl BinaryIterator {
         Python::with_gil(|py| {
             Ok(Self{
                 index: 0,
-                inner: self.inner.clone(),
+                inner: self.inner.clone_ref(py),
                 chunk_size: self.chunk_size,
                 extend: self.extend,
             }.into_py(py))

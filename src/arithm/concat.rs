@@ -17,12 +17,11 @@ pub fn append_any(bitvec: &mut BinaryBase, obj: &PyAny) -> PyResult<()>{
     Ok(())
 }
 
-#[pyfunction(args="*")]
+#[pyfunction(signature = (*args))]
 pub fn concat(args: &types::PyTuple) -> PyResult<PyObject> {
-    let slice = args.as_slice();
     let mut bitvec = BinaryBase::from_data(bv::BitVec::new());
 
-    for arg in slice.iter().rev() {
+    for arg in args.iter().rev() {
         append_any(&mut bitvec, arg)?;
     }
     
